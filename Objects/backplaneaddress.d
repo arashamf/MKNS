@@ -1,0 +1,13 @@
+.\objects\backplaneaddress.o: core\src\BackplaneAddress.c
+.\objects\backplaneaddress.o: .\core\inc\MDR32F9Qx_config.h
+.\objects\backplaneaddress.o: .\core\inc\MDR32F9Qx_board.h
+.\objects\backplaneaddress.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_lib.h
+.\objects\backplaneaddress.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\backplaneaddress.o: .\libraries\CMSIS\CM3\DeviceSupport\MDR32F9Qx\inc\MDR32Fx.h
+.\objects\backplaneaddress.o: .\libraries\CMSIS\CM3\CoreSupport\core_cm3.h
+.\objects\backplaneaddress.o: .\libraries\CMSIS\CM3\CoreSupport\core_cmInstr.h
+.\objects\backplaneaddress.o: .\libraries\CMSIS\CM3\CoreSupport\core_cmFunc.h
+.\objects\backplaneaddress.o: .\libraries\CMSIS\CM3\DeviceSupport\MDR32F9Qx\startup\arm\system_MDR32F9Qx.h
+.\objects\backplaneaddress.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_rst_clk.h
+.\objects\backplaneaddress.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_port.h
+.\objects\backplaneaddress.o: .\core\inc\HW_Profile.h

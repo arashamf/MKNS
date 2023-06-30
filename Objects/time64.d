@@ -1,0 +1,10 @@
+.\objects\time64.o: Time64\time64.c
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\assert.h
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\time.h
+.\objects\time64.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\errno.h
+.\objects\time64.o: Time64\time64.h
+.\objects\time64.o: Time64\time64_config.h
+.\objects\time64.o: Time64\time64_limits.h
