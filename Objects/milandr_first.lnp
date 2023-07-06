@@ -1,12 +1,15 @@
 --cpu Cortex-M3
+".\objects\backplaneaddress.o"
+".\objects\can.o"
 ".\objects\main.o"
 ".\objects\mdr32f9qx_it.o"
+".\objects\mnp_msg.o"
 ".\objects\retarget.o"
-".\objects\mdr_uart_helper.o"
-".\objects\backplaneaddress.o"
-".\objects\biled.o"
-".\objects\can.o"
-".\objects\xtick.o"
+".\objects\ring_buffer.o"
+".\objects\pins.o"
+".\objects\uart_func.o"
+".\objects\systick.o"
+".\objects\timers.o"
 ".\objects\mdr32f9qx_adc.o"
 ".\objects\mdr32f9qx_arinc429r.o"
 ".\objects\mdr32f9qx_arinc429t.o"
@@ -32,6 +35,7 @@
 ".\objects\mdr32f9qx_wwdg.o"
 ".\objects\system_mdr32f9qx.o"
 ".\objects\startup_mdr32f9qx.o"
+".\objects\time64.o"
 --strict --scatter ".\Objects\milandr_first.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

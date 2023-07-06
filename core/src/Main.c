@@ -1,24 +1,15 @@
 /* Includes ------------------------------------------------------------------*/
-#include "MDR32F9Qx_config.h"
-#include "MDR32F9Qx_bkp.h"
-#include "MDR32F9Qx_rst_clk.h"
-#include "MDR32F9Qx_eeprom.h"
-#include "MDR32F9Qx_port.h"
-#include "MDR32F9Qx_iwdg.h"
-#include "MDR32F9Qx_can.h"
 
-#include "Application.h"
+#include "main.h"
+#include "uart_func.h"
 #include "HW_Profile.h"
-#include "XTick.h"
-#include "BiLED.h"
-#include "CAN.h"
-#include "xpt.h"
-#include "Retarget.h"
-#include "BackplaneAddress.h"
-
-
-#include <string.h>
-#include <stdbool.h>
+#include "MNP_msg.h"
+#include "systick.h"
+#include "timers.h"
+#include "pins.h"
+#include "typedef.h"
+#include "protocol.h"
+//#include "BackplaneAddress.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -26,24 +17,151 @@
 /* Variables -----------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+TBiLED m_Led = {{LED_GREEN_PORT, LED_GREEN_PIN}, {LED_RED_PORT, LED_RED_PIN}}; 
 
-static const TBiLED m_Led = { { LED_GREEN_PORT, LED_GREEN_PIN }, { LED_RED_PORT, LED_RED_PIN } }; 
+uint8_t uart_buffer[BUFFER_SIZE]; //массив для кольцевого буффера
+
+MNP_MSG_t MNP_PUT_MSG; //иницализация шаблона сообщения для отправки приёмнику
 
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
+ #include <MDR32Fx.h>
 
+ #define ITM_STIM_U32 (*(volatile unsigned int*)0xE0000000)    // Stimulus Port Register word acces
+ #define ITM_STIM_U8  (*(volatile         char*)0xE0000000)    // Stimulus Port Register byte acces
+ #define ITM_ENA      (*(volatile unsigned int*)0xE0000E00)    // Trace Enable Ports Register
+ #define ITM_TCR      (*(volatile unsigned int*)0xE0000E80)    // Trace control register
+
+ int fputc( int c, FILE *f ) 
+ {
+	if( (ITM_TCR & 1) && (ITM_ENA & 1) ) 	// Check if ITM_TCR.ITMENA is set, Check if stimulus port is enabled
+	{ 		
+		while ((ITM_STIM_U8 & 1) == 0) {}; //Wait until STIMx is ready,
+		ITM_STIM_U8 = (char)c; // then send data
+	}
+	return( c );
+ }
+
+//-----------------------------------------------------------------------------
+int main( void )
+//-----------------------------------------------------------------------------
+{
+	RST_CLK_PCLKcmd( RST_CLK_PCLK_BKP, ENABLE ); //включение тактирования регистра RTC
+
+	SystemInit();
+	
+	InitBiLED(&m_Led); //инициализация светодиодов
+	SetBiLED(&m_Led, LED_BLACK );
+	
+	/*if (ClockConfigure() == false )
+		{SetBiLED( &m_Led, LED_RED );}
+	else
+		{SetBiLED( &m_Led, LED_YELLOW );}*/
+	CPUClk80MHz_Init();
+	
+	xTimer_Init(&Get_SysTick);
+	SysTick_Init(&xTimer_Task);	
+	
+	GPS_nRST_Init(); //инициализия пина аппаратной перезагрузки приёмника
+	
+	UART_LoLevel_Init(UART_TX, UART_TX_CLOCK, UARTx_BAUD_RATE, UART_TX_MODE);  //инициализация UART1 для передачи
+	UARTSetBaud(UART_TX, UARTx_BAUD_RATE, CPU_CLOCK_VALUE);				
+	
+	UART_LoLevel_Init(UART_RX, UART_RX_CLOCK, UARTx_BAUD_RATE, UART_RX_MODE); //инициализация UART2 для получения
+	UARTSetBaud(UART_RX, UARTx_BAUD_RATE, CPU_CLOCK_VALUE);
+	
+	RING_Init (&RING_buffer, uart_buffer, sizeof (uart_buffer));	
+
+	MKS_context_ini ();
+	timers_ini ();
+	GPS_Init(&MNP_PUT_MSG); //отправка конфигурационного сообщения приёмнику
+	Set_GNSS_interval (&MNP_PUT_MSG, 2000); //2000=1c	
+	
+	SetBiLED(&m_Led, LED_GREEN);
+	
+	Delay_MS(100);
+
+
+
+	while(1)
+	{
+		SetBiLED(&m_Led, LED_RED);
+		//TaskSuperviseStatus();
+		Delay_MS( 1000 );
+
+		//put_msg2000 (&MNP_PUT_MSG);
+		SetBiLED(&m_Led, LED_GREEN);
+		Delay_MS	(1000);
+	//	IWDG_ReloadCounter();
+	}
+}
+
+//-----------------------------------------------------------------------------
+static void CPUClk80MHz_Init(void)
+{
+	uint8_t n = 0;
+	ErrorStatus ret;
+	
+	/* Enable HSE */
+  RST_CLK_HSEconfig(RST_CLK_HSE_ON);
+  while ( n < HSE_ON_ATTEMPTS )
+  {
+		ret = RST_CLK_HSEstatus();
+		
+		if ( ret == SUCCESS ) 
+			{break;}	
+		else
+			{n++;}
+  }
+	
+	if ( ret != SUCCESS ) 
+		{SetBiLED(&m_Led, LED_RED);}
+
+  /* CPU_C1_SEL = HSE */
+  RST_CLK_CPU_PLLconfig(RST_CLK_CPU_PLLsrcHSEdiv1, RST_CLK_CPU_PLLmul10); //Select HSE clock as CPU_PLL input clock source & set PLL multiplier
+ 
+		RST_CLK_CPU_PLLcmd(ENABLE); //enable CPU_PLL
+  while (RST_CLK_CPU_PLLstatus() != SUCCESS) {}; //ожидание готовности CPU_PLL 
+
+	RST_CLK_PCLKcmd(RST_CLK_PCLK_EEPROM, ENABLE); 	// Enables the RST_CLK_PCLK_EEPROM 
+
+  EEPROM_SetLatency(EEPROM_Latency_3);   // Sets the code latency value 
+
+  RST_CLK_CPUclkPrescaler(RST_CLK_CPUclkDIV1);   // CPU_C3_SEL = CPU_C2_SEL 
+
+  RST_CLK_CPU_PLLuse(ENABLE);   // CPU_C2_SEL = PLL 
+
+  RST_CLK_CPUclkSelection(RST_CLK_CPUclkCPU_C3);   // HCLK_SEL = CPU_C3_SEL 
+}
+
+//----------------------------------------------------------------------
+/*static void gpio_init(void)
+{
+	PORT_InitTypeDef PORT_InitStructure;
+
+	RST_CLK_PCLKcmd(RST_CLK_PCLK_PORTF, ENABLE);
+	PORT_StructInit(&PORT_InitStructure);
+
+	PORT_InitStructure.PORT_Pin	= (PORT_Pin_0 | PORT_Pin_1); 
+	PORT_InitStructure.PORT_OE = PORT_OE_OUT;
+	PORT_InitStructure.PORT_FUNC = PORT_FUNC_PORT;
+	PORT_InitStructure.PORT_MODE = PORT_MODE_DIGITAL;
+	PORT_InitStructure.PORT_SPEED = PORT_SPEED_MAXFAST;
+
+	PORT_Init(MDR_PORTF, &PORT_InitStructure);
+
+	PORT_ResetBits(MDR_PORTE, (PORT_Pin_3 | PORT_Pin_6));
+}*/
 
 //-----------------------------------------------------------------------------
 bool ClockConfigure ( void )
-//-----------------------------------------------------------------------------
 {
-  uint32_t cntr;
+  uint32_t cntr = 0;
 
 	cntr = 0;
 	RST_CLK_HSEconfig(RST_CLK_HSE_ON); //switch on HSE clock generator
-  while(RST_CLK_HSEstatus() != SUCCESS && cntr++ < 0x40000) //ожидание готовности генератора HSE
-		{};
+  while(RST_CLK_HSEstatus() != SUCCESS && cntr++ < 0x40000) {};//ожидание готовности генератора HSE
 
   if(RST_CLK_HSEstatus() != SUCCESS) //получение статуса генератора HSE
 		return false;
@@ -51,11 +169,9 @@ bool ClockConfigure ( void )
 	#define PLL_MULL_VALUE (CPU_CLOCK_VALUE / HSE_Value - 1) //80МГц/8МГц=10
 	RST_CLK_CPU_PLLconfig (RST_CLK_CPU_PLLsrcHSEdiv1, PLL_MULL_VALUE ); //Select HSE clock as CPU_PLL input clock source & set PLL multiplier
 
-	cntr = 0;
 	RST_CLK_CPU_PLLcmd(ENABLE); //enable CPU_PLL
 	
-	while(RST_CLK_CPU_PLLstatus() != SUCCESS && cntr++ < 0x40000) //ожидание готовности CPU_PLL 
-		{};
+	while(RST_CLK_CPU_PLLstatus() != SUCCESS && cntr++ < 0x40000) {};//ожидание готовности CPU_PLL 
 
   if(RST_CLK_CPU_PLLstatus() != SUCCESS) //получение статуса CPU_PLL 
 		return false;
@@ -106,47 +222,21 @@ void InitWatchDog( void )
 }
  
 //----------------------------------Управление индикаторами состояния----------------------------------//
-void TaskSuperviseStatus( void )
+/*void TaskSuperviseStatus( void )
 {
 
 }
 
-
-//-----------------------------------------------------------------------------
-int main( void )
-//-----------------------------------------------------------------------------
+void HardFault_Handler(void)
 {
-	RST_CLK_PCLKcmd( RST_CLK_PCLK_BKP, ENABLE ); //включение тактирования регистра RTC
-
-	SystemInit();
-
-	InitBiLED( &m_Led );
-	SetBiLED( &m_Led, LED_YELLOW );
-
-	while( ClockConfigure() == false )
-		{SetBiLED( &m_Led, LED_RED );}
-	else
-		{SetBiLED( &m_Led, LED_YELLOW );}
-
-	InitXTick();
-	DelayMs( 2000 );
-
-
-
-	while( 1 )
-	{
-		SetBiLED( &m_Led, LED_RED );
-		//TaskSuperviseStatus();		
-		DelayMs( 1000 );
-		SetBiLED( &m_Led, LED_GREEN );
-		DelayMs( 1000 );
-	//	IWDG_ReloadCounter();
-	}
+	NVIC_SystemReset();
 }
 
+void MemManage_Handler(void)
+{
+	NVIC_SystemReset();	
+}*/
 
-
-//-----------------------------------------------------------------------------
 #if (USE_ASSERT_INFO == 1)
 void assert_failed(uint32_t file_id, uint32_t line)
 {

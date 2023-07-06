@@ -1,327 +1,195 @@
-#include "MDR32F9Qx_config.h"
-#include "MDR32F9Qx_rst_clk.h"
-#include <MDR32F9Qx_uart.h>
-#include <stddef.h>
-
+#include "main.h"
+#include "typedef.h"
+#include "HW_Profile.h"
+#include "ring_buffer.h"
 #include "uart_func.h"
+#include "pins.h"
 
 /* Private define ------------------------------------------------------------*/
-#define UART_COUNT 2
 
 /* Private consts ------------------------------------------------------------*/
-/*
-const uint16_t UART_TX_PORT[ UART_COUNT ]		= { UART1_TX_PORT, UART2_TX_PORT};
-const uint16_t UART_TX_PIN[ UART_COUNT ]		= { UART1_TX_PIN, UART2_TX_PIN};
-const uint16_t UART_TX_PORT_FUNCTION[ UART_COUNT ]	= { UART1_TX_PORT_FUNCTION, UART2_TX_PORT_FUNCTION};
 
-const uint16_t UART_RX_PORT[ UART_COUNT ]		= { UART1_RX_PORT, UART2_RX_PORT};
-const uint16_t UART_RX_PIN[ UART_COUNT ]		= { UART1_RX_PIN, UART2_RX_PIN};
-const uint16_t UART_RX_PORT_FUNCTION[ UART_COUNT ]	= { UART1_RX_PORT_FUNCTION, UART2_RX_PORT_FUNCTION };
-*/
- #define UART_RX_BUFFER_SIZE 256u	
- #define UART_TX_BUFFER_SIZE 256u	
+/* Private variables ---------------------------------------------------------*/
+char DBG_buffer[64];
+RING_buffer_t RING_buffer; //структура с кольцевым буффером
+//uint8_t uart_buffer[BUFFER_SIZE]; //массив для кольцевого буффера
+uint8_t count = 0;
 
-#if ( UART_RX_BUFFER_SIZE == 0 || (UART_RX_BUFFER_SIZE & (UART_RX_BUFFER_SIZE-1)) != 0 )
-//	#error Размер буфера должен быть степенью двойки!
-#endif
-
-#if ( UART_TX_BUFFER_SIZE == 0 || (UART_TX_BUFFER_SIZE & (UART_TX_BUFFER_SIZE-1)) != 0 )
-	//#error Размер буфера должен быть степенью двойки!
-#endif
-
-static MDR_UART_TypeDef* const m_UART_Ports[ 2 ] = { MDR_UART1, MDR_UART2 };
-
-static uint16_t	m_UartRxHead[ 2 ]; //буфферы счётчика для UART1, UART2
-static uint16_t	m_UartRxTail[ 2 ];
-
-static uint16_t	m_UartTxHead[ 2 ];
-static uint16_t	m_UartTxTail[ 2 ];
-
-static uint8_t m_UartRxBuffer[ 2 ][ UART_RX_BUFFER_SIZE ];
-static uint8_t m_UartTxBuffer[ 2 ][ UART_TX_BUFFER_SIZE ];
-
-#pragma push
-#pragma O2
-#pragma Otime
-
-//-----------------------------------------------------------------------------
-void UartOpen( UART_PORT Port, uint32_t BaudRate, UART_WORDLENGTH WordLength, UART_PARITY Parity, UART_STOPBITS StopBits, uint32_t IRQ_Priority )
-//-----------------------------------------------------------------------------
+//------------------Инициализация модуля UART------------------//
+void UART_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t uartBaudRate, UartMode mode)
 {
-  UART_InitTypeDef init;	
+  PORT_InitTypeDef GPIOInitStruct; // Структура для инициализации линий ввода-вывода
 
-	RST_CLK_PCLKcmd( PCLK_BIT( m_UART_Ports[ Port ] ), ENABLE );
+  UART_InitTypeDef UARTInitStruct;  // Структура для инициализации модуля UART
 
-	UART_ITConfig( m_UART_Ports[ Port ], UART_IT_TX | UART_IT_RX, DISABLE );
-	UART_Cmd( m_UART_Ports[ Port ], DISABLE);
-	UART_StructInit( &init );
+  RST_CLK_PCLKcmd(UARTx_CLOCK, ENABLE); // Разрешение тактирования порта  и модуля UART
 
-	init.UART_BaudRate = BaudRate;
-	init.UART_WordLength = WordLength;
-	init.UART_Parity = Parity;
-	init.UART_StopBits = StopBits;
-	init.UART_FIFOMode = UART_FIFO_OFF; 
-	init.UART_HardwareFlowControl = UART_HardwareFlowControl_RXE | UART_HardwareFlowControl_TXE;
+  // Общая конфигурация линий ввода-вывода
+  PORT_StructInit (&GPIOInitStruct);
+  GPIOInitStruct.PORT_SPEED = PORT_SPEED_MAXFAST;
+  GPIOInitStruct.PORT_MODE  = PORT_MODE_DIGITAL;
 
-	UART_BRGInit( m_UART_Ports[ Port ], UART_HCLKdiv1 );
-	UART_Init( m_UART_Ports[ Port ], &init );
+	switch ( mode ) 
+	{
+		case UART_RX_MODE:
+			// Конфигурация и инициализация линии для приема данных 
+			RST_CLK_PCLKcmd(UART_CLOCK_Pin_RX , ENABLE);
+			GPIOInitStruct.PORT_FUNC  = UART_PORT_FuncRX;
+			GPIOInitStruct.PORT_OE    = PORT_OE_IN;
+			GPIOInitStruct.PORT_Pin   = UART_PORT_PinRX;
+			PORT_Init(UART_PORT_RX, &GPIOInitStruct);
+			break;
+		
+		case UART_TX_MODE:
+			// Конфигурация и инициализация линии для передачи данных 
+			RST_CLK_PCLKcmd(UART_CLOCK_Pin_TX, ENABLE);
+			GPIOInitStruct.PORT_FUNC  = UART_PORT_FuncTX;	
+			GPIOInitStruct.PORT_OE    = PORT_OE_OUT;
+			GPIOInitStruct.PORT_Pin   = UART_PORT_PinTX;
+			PORT_Init(UART_PORT_TX, &GPIOInitStruct);
+			break;	
+		
+		default:
+			break;
+	}
 
-	m_UartTxHead[ Port ] = m_UartTxTail[ Port ] = m_UartRxHead[ Port ] = m_UartRxTail[ Port ] = 0;
+  // Конфигурация модуля UART
+  UARTInitStruct.UART_BaudRate            = uartBaudRate;                  // Скорость передачи данных
+  UARTInitStruct.UART_WordLength          = UART_WordLength8b;             // Количество битов данных в сообщении
+  UARTInitStruct.UART_StopBits            = UART_StopBits1;                // Количество STOP-битов
+  UARTInitStruct.UART_Parity              = UART_Parity_No;                // Контроль четности
+  UARTInitStruct.UART_FIFOMode            = UART_FIFO_OFF;                 // Включение/отключение буфера
+  UARTInitStruct.UART_HardwareFlowControl = UART_HardwareFlowControl_TXE |
+																						UART_HardwareFlowControl_RXE;   // Аппаратный контроль за передачей и приемом данных
 
-	UART_ITConfig( m_UART_Ports[ Port ], UART_IT_TX | UART_IT_RX, ENABLE );
-	UART_Cmd( m_UART_Ports[ Port ], ENABLE);
+
+  UART_Init(UARTx, &UARTInitStruct);  // Инициализация модуля UART
+
+  UART_BRGInit(UARTx, UART_HCLKdiv1);  // Выбор предделителя тактовой частоты модуля UART
+
+	if ( mode ==  UART_RX_MODE) 
+	{
+		UART_ITConfig(UARTx, UART_IT_RX, ENABLE); // Выбор источников прерываний (прием данных)
+		UART_InitIRQ(UART_RX_IRQ, 1);
+	}
 	
-	if( Port == UART1 )
+  UART_Cmd(UARTx, ENABLE); // Разрешение работы модуля UART
+}
+
+//----------------------------------------------------------------------------------------
+void DBG_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t uartBaudRate)
+{
+  PORT_InitTypeDef GPIOInitStruct; // Структура для инициализации линий ввода-вывода
+
+  UART_InitTypeDef UARTInitStruct;  // Структура для инициализации модуля UART
+
+  RST_CLK_PCLKcmd(UARTx_CLOCK, ENABLE); // Разрешение тактирования порта  и модуля UART
+
+  // Общая конфигурация линий ввода-вывода
+  PORT_StructInit (&GPIOInitStruct);
+  GPIOInitStruct.PORT_SPEED = PORT_SPEED_MAXFAST;
+  GPIOInitStruct.PORT_MODE  = PORT_MODE_DIGITAL;
+
+			// Конфигурация и инициализация линии для передачи данных 
+	RST_CLK_PCLKcmd(DBG_CLOCK_Pin_TX , ENABLE);
+	GPIOInitStruct.PORT_FUNC  = DBG_PORT_FuncTX ;	
+	GPIOInitStruct.PORT_OE    = PORT_OE_OUT;
+	GPIOInitStruct.PORT_Pin   = DBG_PORT_PinTX;
+	PORT_Init(UART_PORT_TX, &GPIOInitStruct);	
+
+  // Конфигурация модуля UART
+  UARTInitStruct.UART_BaudRate            = uartBaudRate;                  // Скорость передачи данных
+  UARTInitStruct.UART_WordLength          = UART_WordLength8b;             // Количество битов данных в сообщении
+  UARTInitStruct.UART_StopBits            = UART_StopBits1;                // Количество STOP-битов
+  UARTInitStruct.UART_Parity              = UART_Parity_No;                // Контроль четности
+  UARTInitStruct.UART_FIFOMode            = UART_FIFO_OFF;                 // Включение/отключение буфера
+  UARTInitStruct.UART_HardwareFlowControl = UART_HardwareFlowControl_TXE;   // Аппаратный контроль за передачей и приемом данных
+                                          
+
+  UART_Init(UARTx, &UARTInitStruct);  // Инициализация модуля UART
+
+  UART_BRGInit(UARTx, UART_HCLKdiv1);  // Выбор предделителя тактовой частоты модуля UART
+  UART_Cmd(UARTx, ENABLE); // Разрешение работы модуля UART
+}
+
+//------------------
+void UART_InitIRQ(IRQn_Type IRQn, uint32_t priority)
+{
+  NVIC_SetPriority(IRQn, priority);  // Назначение приоритета аппаратного прерывания от UART
+
+  NVIC_EnableIRQ(IRQn); // Разрешение аппаратных прерываний от UART
+}	
+
+//------------------
+void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
+{
+	uint32_t divider = freqCPU / (baudRate >> 2);
+	uint32_t CR_tmp = UARTx->CR;
+	uint32_t LCR_tmp = UARTx->LCR_H;
+	
+	while ( (UARTx->FR & UART_FLAG_BUSY) ) 
+		{__NOP();}		
+
+  UARTx->CR = 0;
+  UARTx->IBRD = divider >> 6;
+  UARTx->FBRD = divider & 0x003F;
+  UARTx->LCR_H = LCR_tmp;
+  UARTx->CR = CR_tmp;
+}
+
+//------------------
+void UART_TX_Data(MDR_UART_TypeDef* UARTx, const uint8_t* data, uint16_t len)
+{
+	uint16_t count = 0;
+	
+	for (count = 0; count < len; count ++) 
 	{
-		NVIC_EnableIRQ( UART1_IRQn );
-		NVIC_SetPriority( UART1_IRQn, IRQ_Priority );
+		while(UART_GetFlagStatus(UARTx, UART_FLAG_BUSY) == SET);
+		UART_SendData(UARTx, data[count]);
 	}
-	else if( Port == UART2 )
+}
+
+//------------------
+void MNP_UART_MSG_Puts (const uint8_t* data, uint16_t len)
+{
+	UART_TX_Data(UART_TX, data, len);
+}
+
+//------------------
+void DBG_PutString (char * str)
+{
+	char smb;
+	
+	while  ((smb = *str++) != 0)
 	{
-		NVIC_EnableIRQ( UART2_IRQn );
-		NVIC_SetPriority( UART2_IRQn, IRQ_Priority );
+		while(UART_GetFlagStatus(DBG_TX, UART_FLAG_BUSY) == SET) {}
+		UART_SendData(DBG_TX, smb);
 	}
-
 }
 
-//-----------------------------------------------------------------------------
-void UartClose( UART_PORT Port )
-//-----------------------------------------------------------------------------
+//-------------------------------получение символа по UART1-----------------------------------//
+void UART_CharReception_Callback (void)
 {
-
-	if( Port == UART1 )
+	auto uint8_t smb;
+	if ( UART_GetITStatusMasked(UART_RX, UART_IT_RX) == SET ) 
 	{
-		NVIC_DisableIRQ( UART1_IRQn );
-	}
-	else if( Port == UART2 )
-	{
-		NVIC_DisableIRQ( UART2_IRQn );
-	}
-
-	UART_DeInit( m_UART_Ports[ Port ] );
-	UART_Cmd( m_UART_Ports[ Port ], DISABLE );
-}
-
-//-----------------------------------------------------------------------------
-uint16_t UartRxQue( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-  uint16_t count;
-
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_RX;
-	count = (m_UartRxTail[ Port ] - m_UartRxHead[ Port ]) & (2 * UART_RX_BUFFER_SIZE - 1);
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_RX;
-
-	return count;
-
-}
-
-//-----------------------------------------------------------------------------
-bool UartRxReady( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-	return (m_UartRxTail[ Port ] != m_UartRxHead[ Port ]);
-}
-
-//-----------------------------------------------------------------------------
-uint16_t UartTxQue( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-  uint16_t count;
-
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_TX;
-	count = (m_UartTxTail[ Port ] - m_UartTxHead[ Port ]) & (2 * UART_TX_BUFFER_SIZE - 1);
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_TX;
-
-	return count;
-
-}
-//-----------------------------------------------------------------------------
-uint16_t UartTxQueRoom( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-	return UART_TX_BUFFER_SIZE - UartTxQue( Port );
-}
-
-
-//-----------------------------------------------------------------------------
-void UartRxClear( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_RX;
-	m_UartRxHead[ Port ] = m_UartRxTail[ Port ] = 0; //обнуление счётчиков
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_RX;
-}
-
-//-----------------------------------------------------------------------------
-void UartTxClear( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_TX;
-	m_UartTxHead[ Port ] = m_UartTxTail[ Port ] = 0; 
-}
-
-//-----------------------------------------------------------------------------
-void UartPutc( UART_PORT Port, uint8_t Smb )
-//-----------------------------------------------------------------------------
-{
-	m_UartTxBuffer[ Port ][ m_UartTxTail[ Port ] & (UART_TX_BUFFER_SIZE-1) ] = Smb;
-
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_TX;
-
-	m_UartTxTail[ Port ]++;
-	m_UartTxTail[ Port ] &= ( 2 * UART_TX_BUFFER_SIZE - 1 );
-
-	// Если буферный регистр передатчика пуст, записываем в него первый байт из очереди.
-	// Это надо сделать, т.к. прерывание передатчика срабатывает "по фронту", т.е. только тогда, 
-	// когда символ переписывается из буферного в сдвиговый регистр.
-	// Не айс, Миландр.
-	//
-	if( m_UART_Ports[ Port ]->FR & UART_FLAG_TXFE )
-	{
-		m_UART_Ports[ Port ]->DR = m_UartTxBuffer[ Port ][ m_UartTxHead[ Port ] & (UART_TX_BUFFER_SIZE-1) ];
-		m_UartTxHead[ Port ]++;
-		m_UartTxHead[ Port ] &= ( 2 * UART_TX_BUFFER_SIZE - 1 );
-	}
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_TX;
-
-}
-
-//-----------------------------------------------------------------------------
-void UartPuts( UART_PORT Port, const uint8_t *Src,  uint16_t Count )
-//-----------------------------------------------------------------------------
-{
-  uint16_t i, j;
-
-    i = m_UartTxTail[ Port ] & (UART_TX_BUFFER_SIZE-1);
-	j = Count;
-
-    while( j-- )
-    {
-        m_UartTxBuffer[ Port ][ i & (UART_TX_BUFFER_SIZE-1)] = *Src++;
-        i = (i + 1) & (2 * UART_TX_BUFFER_SIZE - 1);
-    }
-
-		m_UART_Ports[ Port ]->IMSC &= ~UART_IT_TX;
-    m_UartTxTail[ Port ] += Count;
-    m_UartTxTail[ Port ] &= (2 * UART_TX_BUFFER_SIZE - 1);
-
-	// См. комментарий к UartPutc
-	//
-	if( m_UART_Ports[ Port ]->FR & UART_FLAG_TXFE )
-	{
-		m_UART_Ports[ Port ]->DR = m_UartTxBuffer[ Port ][ m_UartTxHead[ Port ] & (UART_TX_BUFFER_SIZE-1) ];
-		m_UartTxHead[ Port ]++;
-		m_UartTxHead[ Port ] &= ( 2 * UART_TX_BUFFER_SIZE - 1 );
-	}
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_TX;
-}
-
-//-----------------------------------------------------------------------------
-uint8_t UartGetc( UART_PORT Port )
-//-----------------------------------------------------------------------------
-{
-  uint8_t smb;
-
-	smb = m_UartRxBuffer[ Port ][ m_UartRxHead[ Port ] & (UART_RX_BUFFER_SIZE-1) ]; //получение символа
-
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_RX;
-	m_UartRxHead[ Port ]++; //увеличение счётчика обработанных символов
-	m_UartRxHead[ Port ] &= ( 2 * UART_RX_BUFFER_SIZE - 1 );
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_RX;
-
-	return smb;
-}
-
-//-----------------------------------------------------------------------------
-void UartGets( UART_PORT Port, uint8_t *Dst, uint16_t Count )
-//-----------------------------------------------------------------------------
-{
-  uint16_t i, j;
-
-    i = m_UartRxHead[ Port ] & (UART_RX_BUFFER_SIZE-1);
-	j = Count;
-
-    while( j-- )
-    {
-        *Dst++ = m_UartRxBuffer[ Port ][ i & (UART_RX_BUFFER_SIZE-1)];
-        i = (i + 1) & (2 * UART_RX_BUFFER_SIZE - 1);
-    }
-
-
-	m_UART_Ports[ Port ]->IMSC &= ~UART_IT_RX;
-	m_UartRxHead[ Port ] += Count;
-	m_UartRxHead[ Port ] &= ( 2 * UART_RX_BUFFER_SIZE - 1 );
-	m_UART_Ports[ Port ]->IMSC |= UART_IT_RX;
-
-}
-
-//-----------------------------------------------------------------------------
-void UART1_IRQHandler(void)
-//-----------------------------------------------------------------------------
-{
-  uint16_t rx;
-
-	if( m_UART_Ports[ UART1 ]->MIS & UART_IT_TX )
-	{
-		if( m_UartTxTail[ UART1 ] != m_UartTxHead[ UART1 ] )
+    UART_ClearITPendingBit(UART_RX, UART_IT_RX);
+		smb = UART_ReceiveData(UART_RX); // приём байта данных от GPS приемника  
+		RING_Put(&RING_buffer, smb); //отправка байта в кольцевой буффер
+		count++;
+	/*	if (count < 100)
 		{
-			m_UART_Ports[ UART1 ]->DR = m_UartTxBuffer[ UART1 ][ m_UartTxHead[ UART1 ] & (UART_TX_BUFFER_SIZE-1) ];
-			m_UartTxHead[ UART1 ]++;
-			m_UartTxHead[ UART1 ] &= ( 2 * UART_TX_BUFFER_SIZE - 1 );
+			PORT_ResetBits( LED_RED_PORT, LED_RED_PIN); //GREEN
+			PORT_SetBits( LED_GREEN_PORT, LED_GREEN_PIN);
 		}
-		else
+		if (count > 100)
 		{
-			m_UART_Ports[ UART1 ]->IMSC &= ~UART_IT_TX;
+			PORT_SetBits(LED_RED_PORT, LED_RED_PIN); //RED
+			PORT_ResetBits(LED_GREEN_PORT, LED_GREEN_PIN);
+			count = 0;
 		}
-		m_UART_Ports[ UART1 ]->ICR |= UART_IT_TX;
-	}
-
-	if( m_UART_Ports[ UART1 ]->MIS & UART_IT_RX )
-	{
-		rx = m_UART_Ports[ UART1 ]->DR;
-		if( m_UartRxTail[ UART1 ] != (m_UartRxHead[ UART1 ] ^ UART_RX_BUFFER_SIZE ))
-		{
-			m_UartRxBuffer[ UART1 ][ m_UartRxTail[ UART1 ] & (UART_RX_BUFFER_SIZE-1) ] = rx;
-			m_UartRxTail[ UART1 ]++; //увеличение счётчика полученных символов
-			m_UartRxTail[ UART1 ] &= ( 2 * UART_RX_BUFFER_SIZE - 1 );
-		}
-		m_UART_Ports[ UART1 ]->ICR |= UART_IT_RX;
-	}
+		if (count > 200)
+			count = 0;*/
+ 	}
 }
 
-//-----------------------------------------------------------------------------
-void UART2_IRQHandler(void)
-//-----------------------------------------------------------------------------
-{
-  uint16_t rx;
-
-	if( m_UART_Ports[ UART2 ]->MIS & UART_IT_TX )
-	{
-		if( m_UartTxTail[ UART2 ] != m_UartTxHead[ UART2 ] )
-		{
-			m_UART_Ports[ UART2 ]->DR = m_UartTxBuffer[ UART2 ][ m_UartTxHead[ UART2 ] & (UART_TX_BUFFER_SIZE-1) ];
-			m_UartTxHead[ UART2 ]++;
-			m_UartTxHead[ UART2 ] &= ( 2 * UART_TX_BUFFER_SIZE - 1 );
-		}
-		else
-		{
-			m_UART_Ports[ UART2 ]->IMSC &= ~UART_IT_TX;
-		}
-		m_UART_Ports[ UART2 ]->ICR |= UART_IT_TX;
-	}
-
-	if( m_UART_Ports[ UART2 ]->MIS & UART_IT_RX )
-	{
-		rx = m_UART_Ports[ UART2 ]->DR;
-		if( m_UartRxTail[ UART2 ] != ( m_UartRxHead[ UART2 ] ^ UART_RX_BUFFER_SIZE ) )
-		{
-			m_UartRxBuffer[ UART2 ][ m_UartRxTail[ UART2 ] & (UART_RX_BUFFER_SIZE-1) ] = rx;
-			m_UartRxTail[ UART2 ]++;
-			m_UartRxTail[ UART2 ] &= ( 2 * UART_RX_BUFFER_SIZE - 1 );
-		}
-		m_UART_Ports[ UART2 ]->ICR |= UART_IT_RX;
-	}
-}
-
-#pragma pop

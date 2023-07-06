@@ -22,106 +22,25 @@ Dialog DLL:      TCM.DLL V1.53.0.0
  
 <h2>Project:</h2>
 D:\DOCS\STM32_works\MKNS\milandr_first.uvprojx
-Project File Date:  06/30/2023
+Project File Date:  07/05/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'test'
-compiling Main.c...
-core\src\Main.c(128): error:  #127: expected a statement
-        else
-core\src\Main.c(131): warning:  #12-D: parsing restarts here after previous syntax error
-        InitXTick();
-core\src\Main.c: 1 warning, 1 error
-compiling MNP_msg.c...
-.\core\inc\pins.h(24): error:  #20: identifier "GPIO_TypeDef" is undefined
-        GPIO_TypeDef *PORTx;
-core\src\MNP_msg.c(16): error:  #29: expected an expression
-        .tmContext.Time2k = 0, //количество секунд с 01.01.2000
-core\src\MNP_msg.c(17): error:  #29: expected an expression
-        .tmContext.TAI_UTC_offset = 0, //разница между атомным временем и временем UTC
-core\src\MNP_msg.c(18): error:  #29: expected an expression
-        .tmContext.LeapS_59 = 0,                                                                        //високосная секунда 
-core\src\MNP_msg.c(19): error:  #29: expected an expression
-        .tmContext.LeapS_61 = 0,                                                                        //високосная секунда
-core\src\MNP_msg.c(20): error:  #29: expected an expression
-        .tmContext.ValidTHRESHOLD = 0,                                          //наколенная достоверность данных               
-core\src\MNP_msg.c(21): error:  #29: expected an expression
-        .tmContext.Valid = 0,                           //сброс флага достоверности данных              
-core\src\MNP_msg.c(22): error:  #29: expected an expression
-        .tmContext.Max_gDOP = DEFAULT_MAX_gDOP,         //установка максимально допустимого значения gDOP
-core\src\MNP_msg.c(24): error:  #29: expected an expression
-        .canContext.ID = MODULE_TYPE_MKNS,                                      //инициализация типа модуля
-core\src\MNP_msg.c(25): error:  #29: expected an expression
-        .canContext.GetAddr = &Get_Module_Address, //инициализация указателя на функцию получения адреса в кросс-плате
-core\src\MNP_msg.c(28): error:  #29: expected an expression
-        .fContext.Fail = 0, //все флаги аппаратных неисправностей сброшены
-core\src\MNP_msg.c(58): warning:  #223-D: function "MNP_UART_MSG_Puts" declared implicitly
-        MNP_UART_MSG_Puts (Msg->msg_header.header_bytes, sizeof(HEAD_MNP_MSG_t));
-core\src\MNP_msg.c(234): warning:  #223-D: function "RING_GetCount" declared implicitly
-        while (RING_GetCount(&RING_buffer) > 0)
-core\src\MNP_msg.c(234): error:  #20: identifier "RING_buffer" is undefined
-        while (RING_GetCount(&RING_buffer) > 0)
-core\src\MNP_msg.c(237): warning:  #223-D: function "RING_Pop" declared implicitly
-                byte = RING_Pop(&RING_buffer); //получение из кольцевого буфера байта
-core\src\MNP_msg.c(324): error:  #20: identifier "buffer_TX_UART2" is undefined
-                                                        sprintf (buffer_TX_UART2, (char *)"hour=%d,min=%d,sec=%d\r\n", Msg->payload.msg3000.hour,  
-core\src\MNP_msg.c(326): warning:  #223-D: function "UART2_PutString" declared implicitly
-                                                        UART2_PutString (buffer_TX_UART2);
-core\src\MNP_msg.c(381): error:  #20: identifier "buffer_TX_UART2" is undefined
-                                        sprintf (buffer_TX_UART2, "header_CRC_error, %x!=%x\r\n", MNP_CalcChkSum((uint16_t*)&Msg->msg_header, (sizeof(HEAD_MNP_MSG_t)-2)/2), Msg->msg_header.MNP_header.chksum);
-core\src\MNP_msg.c(382): warning:  #223-D: function "UART2_PutString" declared implicitly
-                                        UART2_PutString (buffer_TX_UART2);
-core\src\MNP_msg.c(384): warning:  #223-D: function "RING_Clear" declared implicitly
-                                RING_Clear(&RING_buffer); 
-core\src\MNP_msg.c(435): error:  #20: identifier "buffer_TX_UART2" is undefined
-                sprintf (buffer_TX_UART2, (char *)"pDOP=%0.2f, gDOP=%0.2f, %u %u\r\n", Msg->payload.msg3000.pDOP, 
-core\src\MNP_msg.c(437): warning:  #223-D: function "UART2_PutString" declared implicitly
-                UART2_PutString (buffer_TX_UART2);
-core\src\MNP_msg.c(446): warning:  #223-D: function "RING_GetCount" declared implicitly
-        if (RING_GetCount(&RING_buffer) > 0)
-core\src\MNP_msg.c(446): error:  #20: identifier "RING_buffer" is undefined
-        if (RING_GetCount(&RING_buffer) > 0)
-core\src\MNP_msg.c(206): warning:  #177-D: function "GPS_RST"  was declared but never referenced
-  static void GPS_RST(FunctionalState NewState)
-core\src\MNP_msg.c: 9 warnings, 16 errors
-compiling pins.c...
-.\core\inc\pins.h(24): error:  #20: identifier "GPIO_TypeDef" is undefined
-        GPIO_TypeDef *PORTx;
-core\src\pins.c(42): error:  #20: identifier "LL_GPIO_InitTypeDef" is undefined
-        LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-core\src\pins.c(45): error:  #20: identifier "GPIOC" is undefined
-                { MY_BACKPLANE_ADDR0_PORT, MY_BACKPLANE_ADDR0_PIN },
-core\src\pins.c(45): error:  #20: identifier "LL_GPIO_PIN_6" is undefined
-                { MY_BACKPLANE_ADDR0_PORT, MY_BACKPLANE_ADDR0_PIN },
-core\src\pins.c(46): error:  #20: identifier "LL_GPIO_PIN_7" is undefined
-                { MY_BACKPLANE_ADDR1_PORT, MY_BACKPLANE_ADDR1_PIN },
-core\src\pins.c(47): error:  #20: identifier "LL_GPIO_PIN_8" is undefined
-                { MY_BACKPLANE_ADDR2_PORT, MY_BACKPLANE_ADDR2_PIN },
-core\src\pins.c(48): error:  #20: identifier "LL_GPIO_PIN_9" is undefined
-                { MY_BACKPLANE_ADDR3_PORT, MY_BACKPLANE_ADDR3_PIN },
-core\src\pins.c(49): error:  #20: identifier "GPIOA" is undefined
-                { MY_BACKPLANE_ADDR4_PORT, MY_BACKPLANE_ADDR4_PIN }
-core\src\pins.c(52): warning:  #223-D: function "LL_APB2_GRP1_EnableClock" declared implicitly
-        LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
-core\src\pins.c(52): error:  #20: identifier "LL_APB2_GRP1_PERIPH_GPIOA" is undefined
-        LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
-core\src\pins.c(53): error:  #20: identifier "LL_APB2_GRP1_PERIPH_GPIOB" is undefined
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
-core\src\pins.c(54): error:  #20: identifier "LL_APB2_GRP1_PERIPH_GPIOC" is undefined
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOC);
-core\src\pins.c(56): error:  #20: identifier "LL_GPIO_MODE_INPUT" is undefined
-        GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT; //режим - вход
-core\src\pins.c(57): error:  #20: identifier "LL_GPIO_SPEED_FREQ_LOW" is undefined
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW; //скорость низкая
-core\src\pins.c(58): error:  #20: identifier "LL_GPIO_PULL_UP" is undefined
-        GPIO_InitStruct.Pull = LL_GPIO_PULL_UP; //подтяжка вверх
-core\src\pins.c(64): warning:  #223-D: function "LL_GPIO_Init" declared implicitly
-                LL_GPIO_Init( pins[count].PORTx, &GPIO_InitStruct); //инициализация GPIO
-core\src\pins.c(67): warning:  #223-D: function "HAL_Delay" declared implicitly
-        HAL_Delay(400); //delay
-core\src\pins.c: 3 warnings, 14 errors
-".\Objects\milandr_first.axf" - 31 Error(s), 13 Warning(s).
+compiling timers.c...
+core\src\timers.c(9): warning:  #177-D: function "vTimerGPSAntADCCallback"  was declared but never referenced
+  static void vTimerGPSAntADCCallback(xTimerHandle xTimer);                             // детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+core\src\timers.c(10): warning:  #177-D: function "vTimerGPSAntPowerCallback"  was declared but never referenced
+  static void vTimerGPSAntPowerCallback(xTimerHandle xTimer);                   // таймер управления питанием антены GPS приемника
+core\src\timers.c(16): warning:  #177-D: variable "xTimerGPSAntADC"  was declared but never referenced
+  static xTimerHandle xTimerGPSAntADC;                  // детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+core\src\timers.c(17): warning:  #177-D: variable "xTimerGPSAntPower"  was declared but never referenced
+  static xTimerHandle xTimerGPSAntPower;                // таймер управления питанием антены GPS приемника
+core\src\timers.c: 4 warnings, 0 errors
+linking...
+Program Size: Code=17556 RO-data=844 RW-data=76 ZI-data=3764  
+FromELF: creating hex file...
+".\Objects\milandr_first.axf" - 0 Error(s), 4 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -133,7 +52,6 @@ Package Vendor: Milandr
 <h2>Collection of Component include folders:</h2>
 
 <h2>Collection of Component Files used:</h2>
-Target not created.
 Build Time Elapsed:  00:00:01
 </pre>
 </body>

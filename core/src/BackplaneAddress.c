@@ -1,6 +1,4 @@
-#include "MDR32F9Qx_config.h"
-#include "MDR32F9Qx_rst_clk.h"
-#include "MDR32F9Qx_port.h"
+#include "main.h"
 
 #include "HW_Profile.h"
 
@@ -21,7 +19,7 @@ uint32_t GetBackplaneAddress( void )
   const TPortPin pins[] = {
 							{ MY_BACKPLANE_ADDR0_PORT, MY_BACKPLANE_ADDR0_PIN },
 							{ MY_BACKPLANE_ADDR1_PORT, MY_BACKPLANE_ADDR1_PIN },
-                            { MY_BACKPLANE_ADDR2_PORT, MY_BACKPLANE_ADDR2_PIN },
+              { MY_BACKPLANE_ADDR2_PORT, MY_BACKPLANE_ADDR2_PIN },
 							{ MY_BACKPLANE_ADDR3_PORT, MY_BACKPLANE_ADDR3_PIN },
 							{ MY_BACKPLANE_ADDR4_PORT, MY_BACKPLANE_ADDR4_PIN }
 						  };

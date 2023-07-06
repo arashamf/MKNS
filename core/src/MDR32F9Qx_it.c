@@ -22,7 +22,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "MDR32F9Qx_it.h"
 #include <MDR32F9Qx_timer.h>
-
+#include "uart_func.h"
+#include "timers.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -186,9 +187,10 @@ void DMA_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
-//void UART1_IRQHandler(void)
-//{
-//}
+void UART1_IRQHandler(void)
+{
+	UART_CharReception_Callback ();
+}
 /*******************************************************************************
 * Function Name  : UART2_IRQHandler
 * Description    : This function handles UART2 global interrupt request.
@@ -196,9 +198,10 @@ void DMA_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
-//void UART2_IRQHandler(void)
-//{
-//}
+void UART2_IRQHandler(void)
+{
+	UART_CharReception_Callback ();
+}
 /*******************************************************************************
 * Function Name  : SSP1_IRQHandler
 * Description    : This function handles SSP1 global interrupt request.
@@ -249,6 +252,7 @@ void WWDG_IRQHandler(void)
 *******************************************************************************/
 void Timer1_IRQHandler(void)
 {
+	GPS_PPS_DISABLE_IRQ_Callback();
 }
 
 
@@ -259,9 +263,10 @@ void Timer1_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
-//void Timer2_IRQHandler(void)
-//{
-//}
+void Timer2_IRQHandler(void)
+{
+	UART_TIMER_Callback();
+}
 
 /*******************************************************************************
 * Function Name  : Timer3_IRQHandler
@@ -270,9 +275,10 @@ void Timer1_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
-//void Timer3_IRQHandler(void)
-//{
-//}
+void Timer3_IRQHandler(void)
+{
+	GPS_PPS_IRQ_Callback();
+}
 /*******************************************************************************
 * Function Name  : ADC_IRQHandler
 * Description    : This function handles ADC global interrupt request.

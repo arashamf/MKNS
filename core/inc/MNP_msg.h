@@ -11,7 +11,7 @@ extern "C" {
 #include "MDR32F9Qx_config.h"
 //Private defines ------------------------------------------------------------------//
 #define SPECIAL_CMD_ID 1
-#define SPECIAL_CMD_CODE_RESET 12
+#define SPECIAL_CMD_CODE_RESET 12 //сброс исходных данных приёмника
 #define CMD_CODE_CONFIG 2
 #define CMD_CODE_SATTELITES_MASK 6
 
@@ -284,25 +284,27 @@ typedef struct
 }MNP_MSG_t;
 
 extern MKS2_t MKS2;
+extern MNP_M7_CFG_t MNP_M7_CFG;
 
 //Constants ----------------------------------------------------------------------//
 
 //Private prototypes--------------------------------------------------------------//
 static uint16_t MNP_CalcChkSum( uint16_t *Array, int WordsCount );
 void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount);
-static void MNP_M7_init (MNP_MSG_t *);
+void MNP_M7_init (MNP_MSG_t *);
 void read_config_MNP ( MNP_MSG_t *);
 void read_flash_MNP ( MNP_MSG_t *);
 void put_msg2000 (MNP_MSG_t *);
 void Set_GNSS_interval (MNP_MSG_t *, uint32_t );
 void Get_GNSS_interval (MNP_MSG_t *, uint32_t );
 void Read_SN (MNP_MSG_t *);
+void MKS_context_ini (void);
 void GPS_Init(MNP_MSG_t *);
-void GPS_rst(FunctionalState );
 void MNP_Reset(MNP_MSG_t *);
 static int8_t Parse_MNP_MSG (MNP_MSG_t * );
 static void GPS_Read_Data(MNP_MSG_t *);
-int8_t GPS_wait_data_Callback (MNP_MSG_t *);
+int8_t GPS_wait_data_Callback (void);
+void GPS_Config(void);
 #ifdef __cplusplus
 }
 #endif

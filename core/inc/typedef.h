@@ -8,7 +8,9 @@
 #pragma anon_unions(1)
 #pragma pack(1)
 
-/*typedef union _MY_FLAGS
+typedef enum {UART_RX_MODE = 0, UART_TX_MODE = 1} UartMode; //режим УАРТа
+
+typedef union _MY_FLAGS
 {
 	unsigned int Value;
 	struct //Битовые поля
@@ -16,14 +18,14 @@
 		unsigned CAN_Fail				: 1;	//тип unsigned, длина поля 1 бит, статус CAN	( нет приема собственных сообщений C2 )
 		unsigned UART_state			: 1; //тип unsigned, длина поля 1 бит
 	};
-}TMyFlags;*/
+}TMyFlags;
 
 //------------------------------------------------------------------
 typedef struct 
 {
-	uint16_t rst_delay; //задержка при перезагрузке приёмника
-	uint16_t cfg_msg_delay; //задержка при отправке конф. сообщения приёмника 
-	uint16_t parse_delay;
+	//uint16_t rst_delay; //задержка при перезагрузке приёмника
+//	uint16_t cfg_msg_delay; //задержка при отправке конф. сообщения приёмника 
+//	uint16_t parse_delay; //длительность интервала задержки парсинга сообщений от приёмника
 	enum 
 	{
 		__SYNC_RST = 1, //стадия перезагрузки модуля
@@ -88,32 +90,11 @@ typedef struct
 #define DEFAULT_MAX_gDOP		((float)4.0) //максимально допустимый gDOP по умолчанию
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных достоверных передач от приёмника
 
-#define MNP_UART		((USART_TypeDef *)USART1_BASE)
-
-#define TICKS_PER_SECOND  (TICKS_PER_MILLISECOND*1000)	
-#define TICKS_PER_MILLISECOND		(HAL_GetTickFreq()) //Return tick frequency
-
 #define FAIL_MASK ((uint16_t)0xE000)
 
-//----------------------Адрес модуля в кроссе
-#define MY_BACKPLANE_ADDR0_PIN		LL_GPIO_PIN_6
-#define MY_BACKPLANE_ADDR0_PORT		GPIOC
-                              
-#define MY_BACKPLANE_ADDR1_PIN		LL_GPIO_PIN_7        
-#define MY_BACKPLANE_ADDR1_PORT		GPIOC             
-                              
-#define MY_BACKPLANE_ADDR2_PIN		LL_GPIO_PIN_8        
-#define MY_BACKPLANE_ADDR2_PORT		GPIOC             
-                             
-#define MY_BACKPLANE_ADDR3_PIN		LL_GPIO_PIN_9       
-#define MY_BACKPLANE_ADDR3_PORT		GPIOC             
-                                        
-#define MY_BACKPLANE_ADDR4_PIN		LL_GPIO_PIN_8       
-#define MY_BACKPLANE_ADDR4_PORT		GPIOA    
-
-#define GPS_RST_DELAY						200
-#define GPS_CFG_MSG_DELAY				75
-#define GPS_PARSE_DELAY					100	
+#define GPS_RST_DELAY						250 	//задержка при перезагрузке приёмника
+#define GPS_CFG_MSG_DELAY				75  	//задержка при отправке конф. сообщения приёмника 
+#define GPS_PARSE_DELAY					100	 //длительность интервала задержки парсинга сообщений от приёмника
 
 #define MNP_SYNC_CHAR						0x81FF //синхрослово mnp-сообщени¤
 //Constants ----------------------------------------------------------------------//

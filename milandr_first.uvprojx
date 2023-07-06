@@ -390,11 +390,6 @@
               <FilePath>.\core\src\BackplaneAddress.c</FilePath>
             </File>
             <File>
-              <FileName>BiLED.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\core\src\BiLED.c</FilePath>
-            </File>
-            <File>
               <FileName>CAN.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\core\src\CAN.c</FilePath>
@@ -425,11 +420,6 @@
               <FilePath>.\core\src\ring_buffer.c</FilePath>
             </File>
             <File>
-              <FileName>XTick.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\core\src\XTick.c</FilePath>
-            </File>
-            <File>
               <FileName>pins.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\core\src\pins.c</FilePath>
@@ -445,11 +435,6 @@
               <FilePath>.\core\inc\HW_Profile.h</FilePath>
             </File>
             <File>
-              <FileName>MDR32F9Qx_it.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\core\inc\MDR32F9Qx_it.h</FilePath>
-            </File>
-            <File>
               <FileName>protocol.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\core\inc\protocol.h</FilePath>
@@ -463,6 +448,16 @@
               <FileName>typedef.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\core\inc\typedef.h</FilePath>
+            </File>
+            <File>
+              <FileName>systick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\core\src\systick.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\core\src\timers.c</FilePath>
             </File>
           </Files>
         </Group>
