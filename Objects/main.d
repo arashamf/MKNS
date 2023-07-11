@@ -24,6 +24,7 @@
 .\objects\main.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
 .\objects\main.o: .\core\inc\MNP_msg.h
 .\objects\main.o: .\core\inc\typedef.h
+.\objects\main.o: .\core\inc\can.h
 .\objects\main.o: .\core\inc\uart_func.h
 .\objects\main.o: .\core\inc\ring_buffer.h
 .\objects\main.o: .\core\inc\HW_Profile.h

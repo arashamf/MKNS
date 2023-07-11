@@ -76,7 +76,7 @@ void MNP_M7_init ( MNP_MSG_t *Msg)
 	Msg->payload.msg3006.config.iono_corr = 0x1; // Разрешение ионосферной коррекции
 	Msg->payload.msg3006.config.disable_2D = 0x0; //отключение запрета двумерной навигации
 	Msg->payload.msg3006.config.use_RAIM = 0x1; //включение алгоритма RAIM
-	Msg->payload.msg3006.config.enable_warm_startup = 0x0; //включение быстрого «горячего» старта
+	Msg->payload.msg3006.config.enable_warm_startup = 0x1; //включение быстрого «горячего» старта
 	Msg->payload.msg3006.config.sys_time = 0x1; // Привязка секундной метки к времени навигационной системы 
 	Msg->payload.msg3006.config.glo_time = 0x1; // Секундная метка ГЛОНАСС / UTC(SU)
 	Msg->payload.msg3006.config.shift_meas = 0x1; // Привязка измерений к секундной метке
@@ -195,13 +195,12 @@ void MKS_context_ini (void)
 	MKS2.tmContext.TAI_UTC_offset = 0, //разница между атомным временем и временем UTC
 	MKS2.tmContext.LeapS_59 = 0,									//високосная секунда 
 	MKS2.tmContext.LeapS_61 = 0,									//високосная секунда
-	MKS2.tmContext.ValidTHRESHOLD = 0,						//наколенная достоверность данных		
+	MKS2.tmContext.ValidTHRESHOLD = 0,						//накопленная достоверность данных		
 	MKS2.tmContext.Valid = 0,                  		//сброс флага достоверности данных		
 	MKS2.tmContext.Max_gDOP = DEFAULT_MAX_gDOP, 	//установка максимально допустимого значения gDOP
 		
 	MKS2.canContext.ID = MODULE_TYPE_MKNS, 					//инициализация типа модуля
 	MKS2.canContext.GetAddr = &Get_Module_Address, //инициализация указателя на функцию получения адреса в кросс-плате
-//	.canContext.Addr = Get_Module_Address(),	
 	MKS2.fContext.Fail = 0; //все флаги аппаратных неисправностей сброшены
 }
 
@@ -316,10 +315,12 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 				{	
 					switch ( Msg->msg_header.MNP_header.msg_id ) //проверка  идентификатора типа кадра
 					{
-						case MSG_3000:			
+						case MSG_3000:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"hour=%d,min=%d,sec=%d\r\n", Msg->payload.msg3000.hour,  
 							Msg->payload.msg3000.minute, Msg->payload.msg3000.second);
 							printf ("%s", DBG_buffer);
+							#endif
 							ret = 1; //результат парсинга равен 1 
 							break;
 						
@@ -330,52 +331,66 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							break;
 						
 						case MSG_3011: 
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
+							#endif
 							ret = 3; //результат парсинга равен 3
 							break;
 						
 						case MSG_3002:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
+							#endif
 							ret = 4; //результат парсинга равен 4
 							break;
 						
-						case MSG_3003: 	
+						case MSG_3003:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
+							#endif
 							ret = 5; //результат парсинга равен 5
 							break;
 						
-						case MSG_3006: 	
+						case MSG_3006:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"get msg3006, data_size=%x, code=%u\r\n", Msg->msg_header.MNP_header.data_size, 
 							Msg->payload.msg3006.command_code.cmd_3006.code);				
-							printf ("%s", DBG_buffer);
+							printf ("%s", DBG_buffer);							
 							if (Msg->payload.msg3006.command_code.cmd_3006.code == 7)
 							{
 								sprintf (DBG_buffer, (char *)"interval=%u\r\n",Msg->payload.msg3006.interval);
 								printf ("%s", DBG_buffer);
 							}
+							#endif
 							ret = 6; //результат парсинга равен 6
 							break;
 						
-						case MSG_2200: 
+						case MSG_2200:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x, dummy=%x\r\n", Msg->msg_header.MNP_header.msg_id, 
 							Msg->msg_header.MNP_header.data_size, Msg->msg_header.MNP_header.dummy);				
 							printf ("%s", DBG_buffer);
+							#endif
 							ret = 7; //результат парсинга равен 7
 							break;
 					
 						default:
+							#ifdef __USE_DBG
 							sprintf (DBG_buffer, (char *)"parcing_error,id=%x,data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
+							#endif
 							break;						
 					}
 				}
 				else
 				{
+					#ifdef __USE_DBG
 					sprintf (DBG_buffer, "header_CRC_error, %x!=%x\r\n", MNP_CalcChkSum((uint16_t*)&Msg->msg_header, (sizeof(HEAD_MNP_MSG_t)-2)/2), Msg->msg_header.MNP_header.chksum);
 					printf ("%s", DBG_buffer);
+					#endif
 				}
 				RING_Clear(&RING_buffer); 
 				break;				
@@ -414,7 +429,7 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		UNIX_Time64 = mktime64(&TimeStamp); //перевод полученной даты в формат UNIX (01.01.1970)
 			
 		MKS2.tmContext.Time2k = (uint32_t)(UNIX_Time64 - 946684800); //время прошедшее с 01.01.2000
-		if (!(Msg->payload.msg3000.flags.GPS) || !(Msg->payload.msg3000.flags.UTC)) // достоверность информации от GPS приемника (если установлена 1 то данные недостоверны)
+	//	if (!(Msg->payload.msg3000.flags.GPS) || !(Msg->payload.msg3000.flags.UTC)) // достоверность информации от GPS приемника (если установлена 1 то данные недостоверны)
 		{
 			if (!(MKS2.tmContext.ValidTHRESHOLD & DEFAULT_MASK_ValidTHRESHOLD )) //DEFAULT_MASK_ValidTHRESHOLD == 0b100
 				{MKS2.tmContext.ValidTHRESHOLD++;} //четыре принятые посылки должны быть достоверны
@@ -427,9 +442,11 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		if (MKS2.tmContext.ValidTHRESHOLD != 0)
 			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности
 		MKS2.tmContext.Valid = 0; //сброс флага достоверности времени 
+		#ifdef __USE_DBG
 		sprintf (DBG_buffer, (char *)"pDOP=%0.2f, gDOP=%0.2f, %u %u\r\n", Msg->payload.msg3000.pDOP, 
 		Msg->payload.msg3000.gDOP, Msg->payload.msg3000.flags.GPS, Msg->payload.msg3000.flags.UTC);
 		printf ("%s", DBG_buffer);
+		#endif
 	}
 }
 
@@ -451,8 +468,7 @@ int8_t GPS_wait_data_Callback (void)
 			//	{MKS2.canContext.MsgA1Send();} //отправка сообщения типа А1
 			if (MKS2.tmContext.ValidTHRESHOLD == 0) //если сообщение получено, но данные недостоверны
 			{
-			//	MNP_M7_CFG.parse_delay = 1000; //увеличение задержки парсинга сообщений от приёмника
-				GPS_Config(); //запуск таймера перезагрузки модуля				
+				//GPS_Config(); //запуск таймера перезагрузки модуля				
 			}			
 		}	
 		else
@@ -464,7 +480,9 @@ int8_t GPS_wait_data_Callback (void)
 //-----------------------------------------------------------------------------------------------------//
 void GPS_Config(void)
 {
+	#ifdef __USE_DBG
 	printf ("MNP_reset\r\n");
+	#endif
 	GPS_Reset(ENABLE); //активировать пин аппаратной перезагрузки приёмника
 	MNP_M7_CFG.cfg_state = __SYNC_RST; //статус - перезагрузка модуля
 	Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника

@@ -36,13 +36,13 @@
 #define MODULE_TYPE_ANY                              0x1F
 //#define MODULE_ABSENT                                -1
 
-#define MSG_TYPE_A0                                  0x000 // 000000
-#define MSG_TYPE_A1                                  0x001 // 000001
-#define MSG_TYPE_A2                                  0x002 // 000010
-#define MSG_TYPE_A3                                  0x003 // 000011
-#define MSG_TYPE_B                                   0x008 // 001000
-#define MSG_TYPE_C                                   0x010 // 010000
-#define MSG_TYPE_D                                   0x020 // 100000
+#define MSG_TYPE_A0                                  0x00 // 000000
+#define MSG_TYPE_A1                                  0x01 // 000001
+#define MSG_TYPE_A2                                  0x02 // 000010
+#define MSG_TYPE_A3                                  0x03 // 000011
+#define MSG_TYPE_B                                   0x08 // 001000
+#define MSG_TYPE_C                                   0x10 // 010000
+#define MSG_TYPE_D                                   0x20 // 100000
 
 #define MODULE_ADDR_ALL                              0x1F
 

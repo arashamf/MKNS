@@ -8,23 +8,17 @@ extern "C" {
 
 // Includes ------------------------------------------------------------------------//
 #include "main.h"
+#include "HW_Profile.h"
 
 // Private defines------------------------------------------------------------------//
 
-#define GPS_PPS_ENABLE(a) 	PORT_SetBits(MDR_PORTB, PORT_Pin_8) 	//включение сигнала секундной метки
-#define GPS_PPS_DISABLE(a) 	PORT_ResetBits(MDR_PORTB, PORT_Pin_8) //выключение сигнала секундной метки
+#define GPS_PPS_ENABLE() 	PORT_SetBits(PPS_PULSE_PORT, PPS_PULSE_PIN) 	//включение сигнала секундной метки
+#define GPS_PPS_DISABLE() 	PORT_ResetBits(PPS_PULSE_PORT, PPS_PULSE_PIN) //выключение сигнала секундной метки
 
 #define ON 1
 #define OFF 0
 
 //Exported types -----------------------------------------------------------------//
-typedef struct 
-{
-	MDR_PORT_TypeDef    *PORTx;
-	uint32_t Pin;		
-} TPortPin;
-
-//----------------------------------------------------------------------------
 typedef enum { LED_BLACK = 0, LED_RED, LED_GREEN, LED_YELLOW }TBiLEDColor;
 
 //----------------------------------------------------------------------------
@@ -33,24 +27,33 @@ typedef struct
 	MDR_PORT_TypeDef *PORTx;
 	uint16_t PORT_Pin;		
 
-}TLED_PortPin;
+}TPortPin;
 
 //----------------------------------------------------------------------------
 typedef struct 
 {
-	TLED_PortPin	Green;		
-	TLED_PortPin 	Red;
+	TPortPin	Green;		
+	TPortPin 	Red;
 
 }TBiLED;
 
+static TBiLED m_Led = {{LED_GREEN_PORT, LED_GREEN_PIN}, {LED_RED_PORT, LED_RED_PIN}}; 
+
 //Prototypes------------------------------------------------------------------------//
-void Pins_Address_Init(void);
-uint8_t Get_Module_Address( void );
+int8_t Get_Module_Address( void );
 void Task_Control_LEDs( void );
 void InitBiLED( const TBiLED *pBiLed );
 void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color ); 
 void GPS_nRST_Init(void);
 void GPS_Reset (FunctionalState NewState);
+void PPS_Pin_Init(void);
+void Func_GPIO_Init(void);
+
+//Macro---------------------------------------------------------------------------//
+#define SET_BLACK_LED() 	SetBiLED(&m_Led, LED_BLACK);
+#define SET_RED_LED() 		SetBiLED(&m_Led, LED_RED);
+#define SET_GREEN_LED() 	SetBiLED(&m_Led, LED_GREEN);
+#define SET_YELLOW_LED() 	SetBiLED(&m_Led, LED_YELLOW);
 
 #ifdef __cplusplus
 }

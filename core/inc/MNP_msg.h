@@ -9,6 +9,7 @@ extern "C" {
 // Includes ------------------------------------------------------------------------//
 #include "typedef.h"
 #include "MDR32F9Qx_config.h"
+
 //Private defines ------------------------------------------------------------------//
 #define SPECIAL_CMD_ID 1
 #define SPECIAL_CMD_CODE_RESET 12 //сброс исходных данных приёмника
@@ -87,7 +88,7 @@ typedef struct
 			uint32_t disable_2D			: 1; // Запрет двумерной навигации (0x0)
 			uint32_t use_RAIM				: 1; // Включение алгоритма RAIM (0x1)
 			uint32_t enable_warm_startup	: 1; // Разрешение быстрого «горячего» старта (0x1)
-			uint32_t      					: 2; //Резерв  (0x1)  
+			uint32_t      					: 2; 			//Резерв  (0x0)  
 			// биты  sys_time и glo_time определяют привязку  измерений и фронта секундной метки времени:
 			// glo_time | sys_time | привязка
 			// --------------------------------

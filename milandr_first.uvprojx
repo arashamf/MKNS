@@ -385,11 +385,6 @@
           <GroupName>core</GroupName>
           <Files>
             <File>
-              <FileName>BackplaneAddress.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\core\src\BackplaneAddress.c</FilePath>
-            </File>
-            <File>
               <FileName>CAN.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\core\src\CAN.c</FilePath>
@@ -458,6 +453,11 @@
               <FileName>timers.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\core\src\timers.c</FilePath>
+            </File>
+            <File>
+              <FileName>MDR32F9Qx_can_helper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\core\src\MDR32F9Qx_can_helper.c</FilePath>
             </File>
           </Files>
         </Group>

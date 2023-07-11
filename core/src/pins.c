@@ -1,41 +1,67 @@
 
-// Includes---------------------------------------------------------------------------------------------//
+// Includes------------------------------------------------------------------------------------------//
 #include "main.h"
 #include "pins.h"
 #include "HW_Profile.h"
-//-----------------------------------------------------------------------------------------------------//
-void Pins_Address_Init(void)
-{
+#include "systick.h"
 
+static void Pins_Address_Init(const TPortPin *, uint8_t );
+
+//---------------------------------------------------------------------------------------------------//
+static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
+{
+	uint8_t count;	
+	
+	PORT_InitTypeDef sPort;
+	RST_CLK_PCLKcmd(BACKPLANE_PIN_CLOCK, ENABLE);
+	PORT_StructInit( &sPort );
+	
+	sPort.PORT_OE    = PORT_OE_IN;
+	sPort.PORT_FUNC  = PORT_FUNC_PORT;
+	sPort.PORT_MODE  = PORT_MODE_DIGITAL;
+	sPort.PORT_SPEED = PORT_SPEED_SLOW;
+	
+	for(count = 0 ; count < number_pins; count++ )
+	{		
+		//RST_CLK_PCLKcmd( PCLK_BIT( pins[count].PORTx ), ENABLE ); // Enable peripheral clock for Port
+		sPort.PORT_Pin   = pins[count].PORT_Pin; // Configure Pin
+		PORT_Init( pins[count].PORTx, &sPort );
+	}
 }
 
-//-----------------------------------------------------------------------------------------------------//
-uint8_t Get_Module_Address( void )
+//---------------------------------------------------------------------------------------------------//
+int8_t Get_Module_Address(void)
 {
- // uint8_t count;
- // uint32_t result = 0;
-	uint8_t addr = 0x3;
+	uint8_t count = 0;
+	int8_t addr = 0x1F;
+	uint8_t number_pins = 0;
 	
-/*	Pins_Address_Init();
-	
-  const TPortPin pins[] = 
-						{
-							{ MY_BACKPLANE_ADDR0_PORT, MY_BACKPLANE_ADDR0_PIN },
-							{ MY_BACKPLANE_ADDR1_PORT, MY_BACKPLANE_ADDR1_PIN },
-              { MY_BACKPLANE_ADDR2_PORT, MY_BACKPLANE_ADDR2_PIN },
-							{ MY_BACKPLANE_ADDR3_PORT, MY_BACKPLANE_ADDR3_PIN },
-							{ MY_BACKPLANE_ADDR4_PORT, MY_BACKPLANE_ADDR4_PIN }
-						};
-
-	for( count = 0 ; count < 5; count++ ) //cчитывание состояния пинов на кросс плате
+	const TPortPin pins[] = 
 	{
-		addr |= (!(LL_GPIO_IsInputPinSet (pins[count].PORTx, pins[count].Pin)) << count); //инверсия
-	}*/
+		{ BACKPLANE_ADDR0_PORT, BACKPLANE_ADDR0_PIN },
+		{ BACKPLANE_ADDR1_PORT, BACKPLANE_ADDR1_PIN },
+		{ BACKPLANE_ADDR2_PORT, BACKPLANE_ADDR2_PIN },
+		{ BACKPLANE_ADDR3_PORT, BACKPLANE_ADDR3_PIN },
+		{ BACKPLANE_ADDR4_PORT, BACKPLANE_ADDR4_PIN }
+	};
+	
+	number_pins = sizeof(pins)/sizeof (pins[0]); //количество адресных пинов
+	Pins_Address_Init(pins, number_pins);
+	
+	Delay_MS(250);
 
-	return addr;
+	for(count = 0 ; count < number_pins; count++ )
+	{
+		addr |= ( (!PORT_ReadInputDataBit( pins[count].PORTx, pins[count].PORT_Pin )) << count); 
+	}
+				 
+	if ( addr != 0x1F ) 
+		{return (addr ^ 0x1F);} 
+	else 
+		{return -1;}
 }
 
-//-----------------------------------------------------------------------------------------------------//
+//---------------------------------------------------------------------------------------------------//
 void Task_Control_LEDs( void )
 {
 /*	if( g_MyFlags.CAN_Fail == 1 ) //если на CAN шине ошибка
@@ -49,7 +75,8 @@ void Task_Control_LEDs( void )
 		LED_GREEN(ON);
 	}*/
 }
-//-----------------------------------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------------------------------//
 void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color )
 {
 	switch( Color )
@@ -76,13 +103,11 @@ void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color )
 	}
 }
 
-//----------------------------------------------------------------------------
-static void InitLED_Pin( const TLED_PortPin *PortPin )  
+//---------------------------------------------------------------------------------------------------//
+static void InitLED_Pin( const TPortPin *PortPin )  
 {
   PORT_InitTypeDef port_init_struct;
-
 	RST_CLK_PCLKcmd( PCLK_BIT(PortPin->PORTx), ENABLE ); // Enable peripheral clocks for PORT
-
 	PORT_StructInit( &port_init_struct ); // Configure pin
 
 	port_init_struct.PORT_Pin   = PortPin->PORT_Pin;
@@ -95,18 +120,17 @@ static void InitLED_Pin( const TLED_PortPin *PortPin )
 	PORT_Init( PortPin->PORTx, &port_init_struct );
 }
 
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------//
 void InitBiLED( const TBiLED *pBiLed )  
 {
 	InitLED_Pin( &pBiLed->Red );
 	InitLED_Pin( &pBiLed->Green );
 }
 
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------//
 void GPS_nRST_Init(void)
 {
 	PORT_InitTypeDef PORT_InitStructure;
-
 	RST_CLK_PCLKcmd(GPS_CLOCK_nRST, ENABLE);
 	PORT_StructInit(&PORT_InitStructure);
 
@@ -118,8 +142,6 @@ void GPS_nRST_Init(void)
 	PORT_InitStructure.PORT_PULL_DOWN = PORT_PULL_DOWN_ON;
 
 	PORT_Init(GPS_PORT_nRST, &PORT_InitStructure);
-
-	GPS_Reset(DISABLE);
 }
 
 //----------------------------------аппаратная перезагрузка приемника----------------------------------//
@@ -131,3 +153,31 @@ void GPS_Reset(FunctionalState NewState)
 		{PORT_SetBits(GPS_PORT_nRST, GPS_PIN_nRST);}
 }
 
+//-----------------------------------------------------------------------------------------------------//
+void PPS_Pin_Init(void)
+{
+	PORT_InitTypeDef PORT_InitStructure;
+	RST_CLK_PCLKcmd(CLOCK_PPS_PULSE_PIN, ENABLE);
+	PORT_StructInit(&PORT_InitStructure);
+
+	PORT_InitStructure.PORT_Pin		= PPS_PULSE_PIN; 
+	PORT_InitStructure.PORT_OE 		= PORT_OE_OUT;
+	PORT_InitStructure.PORT_FUNC 	= PORT_FUNC_PORT;;
+	PORT_InitStructure.PORT_MODE 	= PORT_MODE_DIGITAL;
+	PORT_InitStructure.PORT_SPEED = PORT_SPEED_MAXFAST;
+	
+	PORT_Init(PPS_PULSE_PORT, &PORT_InitStructure);
+}
+
+//-----------------------------------------------------------------------------------------------------//
+void Func_GPIO_Init(void)
+{
+	InitBiLED(&m_Led);
+	SetBiLED(&m_Led, LED_BLACK);
+	
+	PPS_Pin_Init ();
+	GPS_PPS_DISABLE(); //отключение выдачи секундной метки
+	
+	GPS_nRST_Init();
+	GPS_Reset(DISABLE); //включение GPS-модуля
+}

@@ -1,5 +1,4 @@
 --cpu Cortex-M3
-".\objects\backplaneaddress.o"
 ".\objects\can.o"
 ".\objects\main.o"
 ".\objects\mdr32f9qx_it.o"
@@ -10,6 +9,7 @@
 ".\objects\uart_func.o"
 ".\objects\systick.o"
 ".\objects\timers.o"
+".\objects\mdr32f9qx_can_helper.o"
 ".\objects\mdr32f9qx_adc.o"
 ".\objects\mdr32f9qx_arinc429r.o"
 ".\objects\mdr32f9qx_arinc429t.o"

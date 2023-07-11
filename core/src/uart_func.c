@@ -12,7 +12,7 @@
 /* Private variables ---------------------------------------------------------*/
 char DBG_buffer[64];
 RING_buffer_t RING_buffer; //структура с кольцевым буффером
-//uint8_t uart_buffer[BUFFER_SIZE]; //массив для кольцевого буффера
+uint8_t uart_buffer[BUFFER_SIZE]; //массив для кольцевого буффера
 uint8_t count = 0;
 
 //------------------Инициализация модуля UART------------------//
@@ -120,7 +120,7 @@ void UART_InitIRQ(IRQn_Type IRQn, uint32_t priority)
   NVIC_EnableIRQ(IRQn); // Разрешение аппаратных прерываний от UART
 }	
 
-//------------------
+//---------------------------------------------------------------------------
 void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
 {
 	uint32_t divider = freqCPU / (baudRate >> 2);
@@ -137,25 +137,37 @@ void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
   UARTx->CR = CR_tmp;
 }
 
-//------------------
+//---------------------------------------------------------------------------
+void MNP_UART_Init (void)
+{	
+	UART_LoLevel_Init(UART_TX, UART_TX_CLOCK, UARTx_BAUD_RATE, UART_TX_MODE);  //инициализация UART1 для передачи
+	UARTSetBaud(UART_TX, UARTx_BAUD_RATE, CPU_CLOCK_VALUE);				
+	
+	UART_LoLevel_Init(UART_RX, UART_RX_CLOCK, UARTx_BAUD_RATE, UART_RX_MODE); //инициализация UART2 для получения
+	UARTSetBaud(UART_RX, UARTx_BAUD_RATE, CPU_CLOCK_VALUE);
+	
+	RING_Init (&RING_buffer, uart_buffer, sizeof (uart_buffer)); //инициализация кольцевого буффера
+}
+
+//---------------------------------------------------------------------------
 void UART_TX_Data(MDR_UART_TypeDef* UARTx, const uint8_t* data, uint16_t len)
 {
 	uint16_t count = 0;
 	
 	for (count = 0; count < len; count ++) 
 	{
-		while(UART_GetFlagStatus(UARTx, UART_FLAG_BUSY) == SET);
+		while(UART_GetFlagStatus(UARTx, UART_FLAG_BUSY) == SET) {}
 		UART_SendData(UARTx, data[count]);
 	}
 }
 
-//------------------
+//---------------------------------------------------------------------------
 void MNP_UART_MSG_Puts (const uint8_t* data, uint16_t len)
 {
 	UART_TX_Data(UART_TX, data, len);
 }
 
-//------------------
+//---------------------------------------------------------------------------
 void DBG_PutString (char * str)
 {
 	char smb;
@@ -177,19 +189,6 @@ void UART_CharReception_Callback (void)
 		smb = UART_ReceiveData(UART_RX); // приём байта данных от GPS приемника  
 		RING_Put(&RING_buffer, smb); //отправка байта в кольцевой буффер
 		count++;
-	/*	if (count < 100)
-		{
-			PORT_ResetBits( LED_RED_PORT, LED_RED_PIN); //GREEN
-			PORT_SetBits( LED_GREEN_PORT, LED_GREEN_PIN);
-		}
-		if (count > 100)
-		{
-			PORT_SetBits(LED_RED_PORT, LED_RED_PIN); //RED
-			PORT_ResetBits(LED_GREEN_PORT, LED_GREEN_PIN);
-			count = 0;
-		}
-		if (count > 200)
-			count = 0;*/
  	}
 }
 

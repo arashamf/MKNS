@@ -123,7 +123,7 @@ static void UART_TIMER_Init(void)
 	TIMER_BRGInit(MDR_TIMER2, TIMER_HCLKdiv1);	// МК clock
 
 	TIMER_CntInitStructure.TIMER_Prescaler				= 160 - 1; // 500kГц
-	TIMER_CntInitStructure.TIMER_Period						= 50000 - 1;	// 50мС
+	TIMER_CntInitStructure.TIMER_Period						= 50000 - 1;	// 100мС
 	TIMER_CntInitStructure.TIMER_CounterMode			= TIMER_CntMode_ClkFixedDir;
 	TIMER_CntInitStructure.TIMER_CounterDirection	= TIMER_CntDir_Up;	 
 	TIMER_CntInitStructure.TIMER_ARR_UpdateMode		= TIMER_ARR_Update_Immediately;   
@@ -132,7 +132,7 @@ static void UART_TIMER_Init(void)
 	TIMER_CntInit(MDR_TIMER2, &TIMER_CntInitStructure);
 
 	TIMER_ITConfig(MDR_TIMER2, TIMER_STATUS_CNT_ARR, ENABLE);
-	NVIC_SetPriority(Timer2_IRQn, 3);
+	NVIC_SetPriority(Timer2_IRQn, 10);
 	NVIC_EnableIRQ(Timer2_IRQn);
 
 	TIMER_Cmd(MDR_TIMER2, ENABLE);
@@ -142,9 +142,7 @@ static void UART_TIMER_Init(void)
 void UART_TIMER_Callback(void)
 {
 	if(TIMER_GetITStatus(MDR_TIMER2, TIMER_STATUS_CNT_ARR) == SET)
-	{				
-		GPS_wait_data_Callback (); //если сообщение от приёмника получено успешно	
-	}
+		{GPS_wait_data_Callback ();} //если сообщение от приёмника получено успешно	
 	TIMER_ClearFlag(MDR_TIMER2, TIMER_STATUS_CNT_ARR);
 }
 
@@ -196,7 +194,7 @@ static void GPS_PPS_EXTI_Init(void)
 	TIMER_BRGInit(MDR_TIMER3, TIMER_HCLKdiv1);
 	
 	TIMER_ITConfig(MDR_TIMER3, TIMER_STATUS_CCR_CAP_CH4, ENABLE);
-	NVIC_SetPriority(Timer3_IRQn, 8);
+	NVIC_SetPriority(Timer3_IRQn, 9);
 	NVIC_EnableIRQ(Timer3_IRQn);
 	
 	TIMER_Cmd(MDR_TIMER3, ENABLE);
@@ -207,7 +205,7 @@ static void GPS_PPS_EXTI_Init(void)
 	TIMER_CntStructInit(&TIMER_CntInitStructure);	
 		
 	TIMER_CntInitStructure.TIMER_Prescaler 				= 8 - 1; // 10МГц
-	TIMER_CntInitStructure.TIMER_Period 					= 65 - 1;
+	TIMER_CntInitStructure.TIMER_Period 					= 60 - 1;
 	TIMER_CntInitStructure.TIMER_CounterMode			= TIMER_CntMode_ClkFixedDir;
 	TIMER_CntInitStructure.TIMER_CounterDirection	= TIMER_CntDir_Up;
 	TIMER_CntInitStructure.TIMER_ARR_UpdateMode		= TIMER_ARR_Update_Immediately; 
@@ -218,18 +216,8 @@ static void GPS_PPS_EXTI_Init(void)
 	TIMER_BRGInit(MDR_TIMER1, TIMER_HCLKdiv1);
 	
 	TIMER_ITConfig(MDR_TIMER1, TIMER_STATUS_CNT_ARR, ENABLE);
-	NVIC_SetPriority(Timer1_IRQn, 9);
+	NVIC_SetPriority(Timer1_IRQn, 8);
 	NVIC_EnableIRQ(Timer1_IRQn);
-	
-	PORT_StructInit(&PORT_InitStructure);
-	PORT_InitStructure.PORT_Pin		= PORT_Pin_8; 
-	PORT_InitStructure.PORT_OE 		= PORT_OE_OUT;
-	PORT_InitStructure.PORT_FUNC 	= PORT_FUNC_PORT;
-	PORT_InitStructure.PORT_MODE 	= PORT_MODE_DIGITAL;
-	PORT_InitStructure.PORT_SPEED = PORT_SPEED_MAXFAST;
-	PORT_Init(MDR_PORTB, &PORT_InitStructure);	
-	
-	GPS_PPS_DISABLE();
 }
 
 //-----------------------------Прерывание от сигнала PPS GPS приемника-----------------------------//
@@ -243,10 +231,12 @@ void GPS_PPS_IRQ_Callback(void)
 		TIMER_Cmd(MDR_TIMER1, ENABLE); // запуск таймера 1, ограничивающего длительность импульса PPS
 		
 		// запуск таймера на выдачу сигнала PPS 
-		xTimerGPSPPSCtrl = xTimer_Create(800, DISABLE, &vTimerGPSPPSCtrlCallback, ENABLE); 
+		xTimerGPSPPSCtrl = xTimer_Create(850, DISABLE, &vTimerGPSPPSCtrlCallback, ENABLE); 
 		
 		xTimer_Reload(xTimerGPSPPSTimeout); //перезагрузка таймера таймаута получения сигнала PPS
+		/*#ifdef __USE_DBG
 		printf ("get_PPS\r\n");
+		#endif*/
 	}	
 }
 
@@ -265,9 +255,19 @@ void GPS_PPS_DISABLE_IRQ_Callback(void)
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 {
 	if (MKS2.tmContext.Valid ) // проверка достоверности 
-		{GPS_PPS_ENABLE();} 	// разрешить выдачу сигнала PPS
+	{
+	/*	#ifdef __USE_DBG
+		printf ("PPS_enable\r\n");
+		#endif*/
+		GPS_PPS_ENABLE(); // включение сигнала PPS
+	} 	
 	else 
-		{GPS_PPS_DISABLE();} 	// запретит выдачи сигнала PPS
+	{
+		GPS_PPS_DISABLE(); // выключение сигнала PPS
+	/*	#ifdef __USE_DBG
+		printf ("PPS_disable\r\n");
+		#endif*/
+	} 	
 
 	xTimer_Delete(xTimerGPSPPSCtrl); //удаление таймера	
 }
@@ -290,6 +290,9 @@ static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer)
 	MKS2.tmContext.Valid = 0;
 	
 	MKS2.fContext.GPS = 1; //ошибка GPS
+	#ifdef __USE_DBG
+	printf ("GPS_timeout\r\n");
+	#endif
 	GPS_Init(&MNP_PUT_MSG); //перенастройка gps-приемникa
 }
 

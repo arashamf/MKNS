@@ -44,6 +44,7 @@ void TaskSuperviseStatus(void);
 
 /* Private defines -----------------------------------------------------------*/
 #define HSE_ON_ATTEMPTS				10
-
+#define __USE_DBG
+//#define __USE_IWDG
 
 #endif 

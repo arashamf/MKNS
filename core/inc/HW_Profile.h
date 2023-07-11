@@ -65,25 +65,32 @@
 #define DBG_PORT_FuncTX  				PORT_FUNC_OVERRID	
 
 // Адрес модуля в кроссе----------------------------------
-#define MY_BACKPLANE_ADDR0_PIN		PORT_Pin_0
-#define MY_BACKPLANE_ADDR0_PORT		MDR_PORTE
+#define BACKPLANE_PIN_CLOCK 		RST_CLK_PCLK_PORTA
+
+#define BACKPLANE_ADDR0_PIN			PORT_Pin_4
+#define BACKPLANE_ADDR0_PORT		MDR_PORTA
                               
-#define MY_BACKPLANE_ADDR1_PIN		PORT_Pin_1        
-#define MY_BACKPLANE_ADDR1_PORT		MDR_PORTE             
+#define BACKPLANE_ADDR1_PIN			PORT_Pin_2        
+#define BACKPLANE_ADDR1_PORT		MDR_PORTA             
                               
-#define MY_BACKPLANE_ADDR2_PIN		PORT_Pin_2        
-#define MY_BACKPLANE_ADDR2_PORT		MDR_PORTE             
+#define BACKPLANE_ADDR2_PIN			PORT_Pin_3        
+#define BACKPLANE_ADDR2_PORT		MDR_PORTA             
                              
-#define MY_BACKPLANE_ADDR3_PIN		PORT_Pin_3        
-#define MY_BACKPLANE_ADDR3_PORT		MDR_PORTE             
+#define BACKPLANE_ADDR3_PIN			PORT_Pin_0        
+#define BACKPLANE_ADDR3_PORT		MDR_PORTA             
                                         
-#define MY_BACKPLANE_ADDR4_PIN		PORT_Pin_6        
-#define MY_BACKPLANE_ADDR4_PORT		MDR_PORTE             
+#define BACKPLANE_ADDR4_PIN			PORT_Pin_1        
+#define BACKPLANE_ADDR4_PORT		MDR_PORTA             
 
 // Пин перезагрузки GPS-приёмника---------------------------
 #define GPS_CLOCK_nRST 					RST_CLK_PCLK_PORTC
 #define GPS_PORT_nRST 					MDR_PORTC
 #define GPS_PIN_nRST 						PORT_Pin_1
+
+// Пин выдачи PPS сигнала---------------------------
+#define CLOCK_PPS_PULSE_PIN 		RST_CLK_PCLK_PORTA
+#define PPS_PULSE_PIN 					PORT_Pin_5
+#define PPS_PULSE_PORT					MDR_PORTA
 
 // GPS Ant Power------------------------------------------
 #define GPS_CLOCK_ANT_PW				RST_CLK_PCLK_PORTD

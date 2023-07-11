@@ -26,3 +26,4 @@
 .\objects\pins.o: .\core\inc\typedef.h
 .\objects\pins.o: .\core\inc\pins.h
 .\objects\pins.o: .\core\inc\HW_Profile.h
+.\objects\pins.o: .\core\inc\systick.h

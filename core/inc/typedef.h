@@ -10,16 +10,6 @@
 
 typedef enum {UART_RX_MODE = 0, UART_TX_MODE = 1} UartMode; //режим УАРТа
 
-typedef union _MY_FLAGS
-{
-	unsigned int Value;
-	struct //Битовые поля
-	{
-		unsigned CAN_Fail				: 1;	//тип unsigned, длина поля 1 бит, статус CAN	( нет приема собственных сообщений C2 )
-		unsigned UART_state			: 1; //тип unsigned, длина поля 1 бит
-	};
-}TMyFlags;
-
 //------------------------------------------------------------------
 typedef struct 
 {
@@ -67,9 +57,9 @@ typedef union
 typedef struct 
 {
 	uint8_t ID; 							//тип модуля для CAN-заголовка
-	uint8_t Addr; 						//адрес в кросс-плате
-	uint8_t (*GetAddr)(void); //указатель на ф-ю получения адреса платы
-	uint32_t (*MsgA1Send)(void);
+	int8_t Addr; 						//адрес в кросс-плате
+	int8_t (*GetAddr)(void); //указатель на ф-ю получения адреса в кросс-плате
+	void (*MsgA1Send)(void);
 } CAN_CONTEXT_t;
 
 //------------------------------------------------------------------
@@ -80,17 +70,119 @@ typedef struct
 	CAN_CONTEXT_t 	canContext; //структура с данными для CAN заголовка
 } MKS2_t;
 
+//структуры CAN-сообщения С2----------------------------------------
+typedef struct
+{
+	uint8_t data_type			: 3;
+	uint8_t module_id			: 5;
+	uint8_t 							: 5;
+	uint8_t fail_gps_ant 	: 1; 		// 1 - КЗ GPS антены  
+	uint8_t fail_gps 			: 1; 		// 1 - отказ GPS приемника
+	uint8_t fail 					: 1; 		// 1 - интегральный отказ, при наличие хотя бы одного отказа
+	uint8_t 							: 7;
+	uint8_t gps_ant_disc	: 1;		// 1 - GPS антена неподключенна
+	uint8_t 							: 8;
+	uint8_t 							: 8;
+	uint8_t 							: 8;
+	uint8_t 							: 8;
+	uint8_t 							: 8;
+} MESSAGE_C2_t;
+
+//------------------------------------------------------------------
+typedef union
+{
+	struct
+	{
+		uint8_t data_type		: 3;
+		uint8_t module_type	: 5;
+		uint16_t gDOP;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+	};
+	uint8_t RAW[8];
+}MESSAGE_B_CONFIG_t;
+
+//------------------------------------------------------------------
+typedef union
+{
+	struct
+	{
+		uint8_t data_type		: 3;
+		uint8_t module_type	: 5;
+		uint8_t 			 			: 6;
+		uint8_t disable			: 1;
+		uint8_t reset				: 1;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 						: 8;
+		uint8_t 					: 8;
+	};
+	uint8_t RAW[8];
+}MESSAGE_B_SERVICE_t;
+
+//------------------------------------------------------------------
+typedef union
+{
+	struct
+	{
+		uint8_t data_type		: 3;
+		uint8_t module_type	: 5;
+		union
+		{
+			struct
+			{
+				uint8_t year		: 8;
+				uint8_t month		: 8;
+				uint8_t day			: 8;
+				uint8_t hour		: 8;
+				uint8_t min			: 8;
+				uint8_t sec			: 8;
+				uint8_t local_tz	: 5;
+				uint8_t moskow_tz	: 3;
+			}Type2;
+			
+			struct
+			{
+				uint32_t time2k;
+				struct
+				{
+					int8_t ls_tai					: 8; 	// TAI leap seconds (TAI-UTC)
+					uint8_t moscow_tz			: 3;	// в часах
+					uint8_t 							: 3;
+					uint8_t ls_59					: 1;
+					uint8_t ls_61					: 1;				
+					int8_t local_tz				: 8;	// в 15 мин интервалах
+				};
+			}Type3;			
+		};
+	};
+
+	uint8_t RAW[8];
+
+}MESSAGE_A1_t;
+
 #pragma pack()
 #pragma anon_unions()
 
 //Private defines ------------------------------------------------------------------//
+/* DEBUG information */
+#ifdef __USE_DBG
+#define DBG(...)  printf(__VA_ARGS__)
+#else
+#define DBG(...)
+#endif
 
 #define BUFFER_SIZE 					512					//размер буффера обмена с GPS-приемником
 
 #define DEFAULT_MAX_gDOP		((float)4.0) //максимально допустимый gDOP по умолчанию
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных достоверных передач от приёмника
 
-#define FAIL_MASK ((uint16_t)0xE000)
+#define FAIL_MASK ((uint16_t)0xE0)
 
 #define GPS_RST_DELAY						250 	//задержка при перезагрузке приёмника
 #define GPS_CFG_MSG_DELAY				75  	//задержка при отправке конф. сообщения приёмника 

@@ -28,6 +28,7 @@
 .\objects\mnp_msg.o: .\core\inc\ring_buffer.h
 .\objects\mnp_msg.o: .\core\inc\protocol.h
 .\objects\mnp_msg.o: .\core\inc\pins.h
+.\objects\mnp_msg.o: .\core\inc\HW_Profile.h
 .\objects\mnp_msg.o: .\Time64\time64.h
 .\objects\mnp_msg.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\time.h
 .\objects\mnp_msg.o: .\Time64\time64_config.h

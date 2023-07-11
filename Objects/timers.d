@@ -26,3 +26,4 @@
 .\objects\timers.o: .\core\inc\MNP_msg.h
 .\objects\timers.o: .\core\inc\typedef.h
 .\objects\timers.o: .\core\inc\pins.h
+.\objects\timers.o: .\core\inc\HW_Profile.h
