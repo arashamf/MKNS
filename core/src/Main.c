@@ -17,7 +17,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Variables -----------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-MNP_MSG_t MNP_PUT_MSG; //иницализация шаблона сообщения для отправки приёмнику
+
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -47,44 +47,41 @@ int main( void )
 
 	SystemInit();
 	
-	Func_GPIO_Init();
 	CPUClk80MHz_Init();
 	
 	xTimer_Init(&Get_SysTick);
 	SysTick_Init(&xTimer_Task);	
 	
+	Func_GPIO_Init();
+	
 	MNP_UART_Init (); //инициализация UART
 	MKS_context_ini (); //инициализация структур 
 	CAN1_Init((void*)&MKS2);
 	timers_ini (); //инициализация таймеров
-	GPS_Init(&MNP_PUT_MSG); //отправка конфигурационного сообщения приёмнику
-	Set_GNSS_interval (&MNP_PUT_MSG, 2000); //установка интервала сообщений 3000 (2000=1c)
+	GPS_Init(); //отправка конфигурационного сообщения приёмнику
 	
 	#ifdef __USE_IWDG
 		IWDG_Init(); //инициализация сторожевого таймера
 	#endif
 	
-	Delay_MS(100);
-
-
-
 while(1)
 	{
 		CAN1_RX_Process();
-		SET_RED_LED();
+		
+		if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) 
+			{SET_RED_LED();} 
+		else 
+		{	
+			if ( MKS2.tmContext.Valid ) 
+				{SET_GREEN_LED();} 
+			else
+				{SET_YELLOW_LED();}
+		}
+		
 		#ifdef __USE_IWDG	
 			IWDG_ReloadCounter();
 		#endif
-		//TaskSuperviseStatus();
-		Delay_MS( 1000 );
 
-		//put_msg2000 (&MNP_PUT_MSG);
-		SET_GREEN_LED();
-		#ifdef __USE_IWDG	
-			IWDG_ReloadCounter();
-		#endif
-		Delay_MS	(1000);
-	//	IWDG_ReloadCounter();
 	}
 }
 
@@ -195,13 +192,7 @@ void InitWatchDog( void )
 }
 #endif
 
-//----------------------------------Управление индикаторами состояния----------------------------------//
-/*void TaskSuperviseStatus( void )
-{
-
-}
-
-void HardFault_Handler(void)
+/*void HardFault_Handler(void)
 {
 	NVIC_SystemReset();
 }

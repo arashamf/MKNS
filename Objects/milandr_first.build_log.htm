@@ -28,10 +28,27 @@ Project File Date:  07/11/2023
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'test'
 compiling CAN.c...
+compiling Main.c...
+compiling MDR32F9Qx_it.c...
+compiling MNP_msg.c...
+compiling ring_buffer.c...
+compiling pins.c...
+core\src\pins.c(35): warning:  #177-D: variable "count"  was declared but never referenced
+        uint8_t count = 0;
+core\src\pins.c(37): warning:  #177-D: variable "number_pins"  was declared but never referenced
+        uint8_t number_pins = 0;
+core\src\pins.c(39): warning:  #177-D: variable "pins"  was declared but never referenced
+        const TPortPin pins[] = 
+core\src\pins.c(11): warning:  #177-D: function "Pins_Address_Init"  was declared but never referenced
+  static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
+core\src\pins.c: 4 warnings, 0 errors
+compiling uart_func.c...
+compiling systick.c...
+compiling timers.c...
 linking...
-Program Size: Code=20152 RO-data=884 RW-data=192 ZI-data=3776  
+Program Size: Code=20304 RO-data=884 RW-data=200 ZI-data=3776  
 FromELF: creating hex file...
-".\Objects\milandr_first.axf" - 0 Error(s), 0 Warning(s).
+".\Objects\milandr_first.axf" - 0 Error(s), 4 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -43,7 +60,7 @@ Package Vendor: Milandr
 <h2>Collection of Component include folders:</h2>
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:01
+Build Time Elapsed:  00:00:10
 </pre>
 </body>
 </html>

@@ -25,7 +25,8 @@
 .\objects\can.o: .\core\inc\MNP_msg.h
 .\objects\can.o: .\core\inc\typedef.h
 .\objects\can.o: .\core\inc\can.h
-.\objects\can.o: .\core\inc\protocol.h
+.\objects\can.o: .\core\inc\pins.h
 .\objects\can.o: .\core\inc\HW_Profile.h
+.\objects\can.o: .\core\inc\protocol.h
 .\objects\can.o: .\core\inc\timers.h
 .\objects\can.o: .\core\inc\MDR32F9Qx_can_helper.h

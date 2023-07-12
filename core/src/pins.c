@@ -33,7 +33,7 @@ static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
 int8_t Get_Module_Address(void)
 {
 	uint8_t count = 0;
-	int8_t addr = 0x1F;
+	int8_t addr = 0;
 	uint8_t number_pins = 0;
 	
 	const TPortPin pins[] = 
@@ -45,18 +45,22 @@ int8_t Get_Module_Address(void)
 		{ BACKPLANE_ADDR4_PORT, BACKPLANE_ADDR4_PIN }
 	};
 	
-	number_pins = sizeof(pins)/sizeof (pins[0]); //количество адресных пинов
+	/*number_pins = sizeof(pins)/sizeof (pins[0]); //количество адресных пинов
 	Pins_Address_Init(pins, number_pins);
 	
-	Delay_MS(250);
+	Delay_MS(600);
 
-	for(count = 0 ; count < number_pins; count++ )
+	//for(count = 0 ; count < number_pins; count++ )
+	for( count = 0 ; count < 5; count++ )
 	{
 		addr |= ( (!PORT_ReadInputDataBit( pins[count].PORTx, pins[count].PORT_Pin )) << count); 
-	}
-				 
+	}*/
+	addr = 0x6;
+	#ifdef __USE_DBG
+		printf ("my_adress=%d\r\n", addr);
+	#endif			 
 	if ( addr != 0x1F ) 
-		{return (addr ^ 0x1F);} 
+		{return addr;} 
 	else 
 		{return -1;}
 }
@@ -86,12 +90,12 @@ void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color )
 			PORT_ResetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 
-		case LED_RED:
+		case LED_GREEN:
 			PORT_SetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_ResetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 
-		case LED_GREEN:
+		case LED_RED:
 			PORT_ResetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_SetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;

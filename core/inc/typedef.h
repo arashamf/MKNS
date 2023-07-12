@@ -15,7 +15,6 @@ typedef struct
 {
 	//uint16_t rst_delay; //задержка при перезагрузке приёмника
 //	uint16_t cfg_msg_delay; //задержка при отправке конф. сообщения приёмника 
-//	uint16_t parse_delay; //длительность интервала задержки парсинга сообщений от приёмника
 	enum 
 	{
 		__SYNC_RST = 1, //стадия перезагрузки модуля
@@ -27,8 +26,8 @@ typedef struct
 typedef struct 
 {
 	uint32_t 	Time2k; //количество секунд с 01.01.2000
-	float Max_gDOP; //максимально допустимый gDOP
-	int8_t		TAI_UTC_offset; // //разница между атомным временем и временем UTC
+	float 		Max_gDOP; //максимально допустимый gDOP
+	int8_t		TAI_UTC_offset; //разница между атомным временем и временем UTC
 	uint8_t 	ValidTHRESHOLD; 	// "сдвиговый регистр" накапливающий достоверность
 	struct 
 	{
@@ -56,7 +55,7 @@ typedef union
 //------------------------------------------------------------------
 typedef struct 
 {
-	uint8_t ID; 							//тип модуля для CAN-заголовка
+	uint8_t ID; 							//тип модуля (МКНС) для CAN-заголовка
 	int8_t Addr; 						//адрес в кросс-плате
 	int8_t (*GetAddr)(void); //указатель на ф-ю получения адреса в кросс-плате
 	void (*MsgA1Send)(void);
@@ -65,7 +64,7 @@ typedef struct
 //------------------------------------------------------------------
 typedef struct 
 {
-	TM_CONTEXT_t 		tmContext; //структура с временными смещениями
+	TM_CONTEXT_t 		tmContext; //структура с данными времени
 	FAIL_CONTEXT_t 	fContext; //битовое поле со статусами gps-приёмника
 	CAN_CONTEXT_t 	canContext; //структура с данными для CAN заголовка
 } MKS2_t;
@@ -182,7 +181,7 @@ typedef union
 #define DEFAULT_MAX_gDOP		((float)4.0) //максимально допустимый gDOP по умолчанию
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных достоверных передач от приёмника
 
-#define FAIL_MASK ((uint16_t)0xE0)
+#define FAIL_MASK ((uint16_t)0xF0)
 
 #define GPS_RST_DELAY						250 	//задержка при перезагрузке приёмника
 #define GPS_CFG_MSG_DELAY				75  	//задержка при отправке конф. сообщения приёмника 

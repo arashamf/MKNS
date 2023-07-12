@@ -3,10 +3,10 @@
 #include "main.h"
 #include "MNP_msg.h"
 #include "uart_func.h"
-//#include "HW_Profile.h"
 #include "typedef.h"
 #include "protocol.h"
 #include "pins.h"
+#include "systick.h"
 #include "time64.h"
 #include "timers.h"
 #include "ring_buffer.h"
@@ -16,9 +16,10 @@
 //Constants -------------------------------------------------------------------------------------------//
 
 //Private variables -----------------------------------------------------------------------------------//
-MKS2_t MKS2; //инициализация структуры типа MKS2_t
-MNP_MSG_t MNP_GET_MSG; //структура для приёма сообщения от приёмника
-MNP_M7_CFG_t MNP_M7_CFG; //иницализация шаблона структуры перезагрузки и настройки приёмника
+MKS2_t MKS2; //объявление структуры типа MKS2_t
+MNP_MSG_t MNP_GET_MSG; //объявление структуры для приёма сообщения от приёмника
+MNP_MSG_t MNP_PUT_MSG; //объявление структуры сообщения для отправки приёмнику
+MNP_M7_CFG_t MNP_M7_CFG; //объявление структуры перезагрузки и настройки приёмника
 
 //-----------------------------------------------------------------------------------------------------//
 static uint16_t MNP_CalcChkSum	(uint16_t *Array, int WordsCount)
@@ -184,13 +185,7 @@ void Read_SN (MNP_MSG_t *Msg)
 void MKS_context_ini (void)
 {
 	MNP_GET_MSG.rx_state = __SYNC_BYTE1; 
-
-	MNP_M7_CFG.cfg_state = __SYNC_RST ,
-//	MNP_M7_CFG.parse_delay = GPS_PARSE_DELAY,
-//	MNP_M7_CFG.cfg_msg_delay = GPS_CFG_MSG_DELAY, //
-//	MNP_M7_CFG.rst_delay = GPS_RST_DELAY,	//задержка для перезагрузки приёмника
-
-	
+		
 	MKS2.tmContext.Time2k = 0, //количество секунд с 01.01.2000
 	MKS2.tmContext.TAI_UTC_offset = 0, //разница между атомным временем и временем UTC
 	MKS2.tmContext.LeapS_59 = 0,									//високосная секунда 
@@ -199,15 +194,15 @@ void MKS_context_ini (void)
 	MKS2.tmContext.Valid = 0,                  		//сброс флага достоверности данных		
 	MKS2.tmContext.Max_gDOP = DEFAULT_MAX_gDOP, 	//установка максимально допустимого значения gDOP
 		
-	MKS2.canContext.ID = MODULE_TYPE_MKNS, 					//инициализация типа модуля
-	MKS2.canContext.GetAddr = &Get_Module_Address, //инициализация указателя на функцию получения адреса в кросс-плате
 	MKS2.fContext.Fail = 0; //все флаги аппаратных неисправностей сброшены
 }
 
 //-----------------------------------------Инициализация МНП-М7-----------------------------------------//
-void GPS_Init(MNP_MSG_t *Msg)
+void GPS_Init(void)
 {
-	MNP_M7_init (Msg);		
+	MNP_M7_init (&MNP_PUT_MSG);	
+	Delay_MS(50);
+	Get_GNSS_interval (&MNP_PUT_MSG, 2000); //установка интервала сообщений 3000 (2000=1c)
 }
 
 //---------------------------------сообщение перезагрузки GPS приемника---------------------------------//
@@ -226,7 +221,6 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 	uint8_t byte; //полученный из кольцевого буффера байт
 	static uint16_t byte_i; //счётчик принятых байтов тела сообщения
 	int8_t ret = -1; //результат парсинга
-//	float tDOP = 0;
 	
 	Msg->msg_header.MNP_header.sync = MNP_SYNC_CHAR;
 	
@@ -388,7 +382,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 				else
 				{
 					#ifdef __USE_DBG
-					sprintf (DBG_buffer, "header_CRC_error, %x!=%x\r\n", MNP_CalcChkSum((uint16_t*)&Msg->msg_header, (sizeof(HEAD_MNP_MSG_t)-2)/2), Msg->msg_header.MNP_header.chksum);
+					sprintf (DBG_buffer, "CRC_header_error, %x!=%x\r\n", MNP_CalcChkSum((uint16_t*)&Msg->msg_header, (sizeof(HEAD_MNP_MSG_t)-2)/2), Msg->msg_header.MNP_header.chksum);
 					printf ("%s", DBG_buffer);
 					#endif
 				}
@@ -439,8 +433,8 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 	}
 	else
 	{
-		if (MKS2.tmContext.ValidTHRESHOLD != 0)
-			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности
+		if (MKS2.tmContext.ValidTHRESHOLD > 0)
+			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности		
 		MKS2.tmContext.Valid = 0; //сброс флага достоверности времени 
 		#ifdef __USE_DBG
 		sprintf (DBG_buffer, (char *)"pDOP=%0.2f, gDOP=%0.2f, %u %u\r\n", Msg->payload.msg3000.pDOP, 
@@ -455,7 +449,7 @@ int8_t GPS_wait_data_Callback (void)
 {
 	int8_t result = -1;
 	
-	if (RING_GetCount(&RING_buffer) > 0)
+	if (RING_GetCount(&RING_buffer) > 0) //если есть новые данные в кольцевом буффере
 	{	
 		if ((result = Parse_MNP_MSG (&MNP_GET_MSG)) > 0) //если сообщение от приёмника получено полностью
 		{
@@ -464,15 +458,9 @@ int8_t GPS_wait_data_Callback (void)
 			
 			Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута
 			
-			//if (MKS2.tmContext.Valid) // отправка сообщения A при достоверной информации от GPS приемника
-			//	{MKS2.canContext.MsgA1Send();} //отправка сообщения типа А1
-			if (MKS2.tmContext.ValidTHRESHOLD == 0) //если сообщение получено, но данные недостоверны
-			{
-				//GPS_Config(); //запуск таймера перезагрузки модуля				
-			}			
+			if (MKS2.tmContext.Valid) // отправка сообщения A при достоверной информации от GPS приемника
+				{MKS2.canContext.MsgA1Send();} //отправка сообщения типа А1			
 		}	
-		else
-		{}
 	}
 	return result;
 }

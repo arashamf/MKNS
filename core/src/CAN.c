@@ -1,6 +1,7 @@
 // Includes ------------------------------------------------------------------
 #include "main.h"
 #include "can.h"
+#include "pins.h"
 #include "typedef.h"
 #include "protocol.h"
 #include "HW_Profile.h"
@@ -8,18 +9,16 @@
 #include "MDR32F9Qx_can_helper.h"
 
 //Macro -----------------------------------------------------------------------------
-#define CAN_BRP_VALUE ( (CPU_CLOCK_VALUE / 1000000UL / 2UL) - 1 )
+#define CAN_BRP_VALUE ( (CPU_CLOCK_VALUE / 1000000UL / 2UL) - 1 ) // • Tq (µs) = ((BRP+1))/CLK (MHz) 
 
 // объявление ф-ий ------------------------------------------------------------------
 static void CAN1_C2_Send(void);
 static void CAN1_A1_Send(void);
+
 static void vTimerSelfC2RqstCallback(xTimerHandle xTimer);
 static void vTimerRCVSelfC2RqstTimeoutCallback(xTimerHandle xTimer);
 
 // переменные------------------------------------------------------------------
-static TM_CONTEXT_t 	*tmContext;				// ШВ
-static FAIL_CONTEXT_t *fContext;				// отказы
-static CAN_CONTEXT_t 	*canContext;			// CAN
 
 static xTimerHandle xTimerSelfC2Rqst;
 static xTimerHandle xTimerRCVSelfC2RqstTimeout;
@@ -31,6 +30,10 @@ static MESSAGE_A1_t MESSAGE_A1;
 static MESSAGE_B_CONFIG_t MESSAGE_B_CONFIG;
 static MESSAGE_B_SERVICE_t MESSAGE_B_SERVICE;
 
+static TM_CONTEXT_t 	*tmContext;			// ШВ
+static FAIL_CONTEXT_t *fContext;			// отказы
+static CAN_CONTEXT_t 	*canContext;		// CAN
+
 //---------------------------------------инициализация CAN---------------------------------------//
 void CAN1_Init(void *arg)
 {
@@ -41,8 +44,10 @@ void CAN1_Init(void *arg)
 	fContext = &(((MKS2_t *)arg)->fContext);
 	canContext = &(((MKS2_t *)arg)->canContext);
 	
-	canContext->MsgA1Send = &CAN1_A1_Send;
-
+	canContext->MsgA1Send = &CAN1_A1_Send; 
+	canContext->ID = MODULE_TYPE_MKNS, 					//инициализация типа модуля
+	canContext->GetAddr = &Get_Module_Address, //инициализация указателя на функцию получения адреса в кросс-плате
+	
 	//инициализация пинов для CAN-модуля
 	RST_CLK_PCLKcmd(RST_CLK_PCLK_PORTA, ENABLE);
 
@@ -62,27 +67,32 @@ void CAN1_Init(void *arg)
 	
 	//инициализация CAN1
 	RST_CLK_PCLKcmd( RST_CLK_PCLK_CAN1 , ENABLE );
-	CAN_BRGInit( MDR_CAN1, CAN_HCLKdiv1);
-	CAN_DeInit( MDR_CAN1 );
+	CAN_BRGInit( MDR_CAN1, CAN_HCLKdiv1); // Set the HCLK division factor = 1 for CAN
+	CAN_DeInit( MDR_CAN1 );		// Reset CAN to POR
 	CAN_StructInit (&sCAN);
 
 	sCAN.CAN_ROP  = ENABLE; //получать собственные пакеты
+//	sCAN.CAN_SAP  = ENABLE; //отвечать ACK на собственные пакеты	
+	sCAN.CAN_STM  = DISABLE; //режим самотестирования
+	sCAN.CAN_ROM  = DISABLE; //режим "только чтение"
 	
 	canContext->Addr = canContext->GetAddr(); //получение адреса в кросс-плате
 	
-	if ( canContext->Addr == -1 ) // если модуль запущен без кросса
+	if ( MKS2.canContext.Addr == -1 ) // если модуль запущен без кросса
 	{
 		canContext->Addr = 0;
 		sCAN.CAN_SAP  = ENABLE; //отвечать ACK на собственные пакеты	
 	} 
 	else 
 		{sCAN.CAN_SAP  = DISABLE;} // не отвечать ACK на собственные пакеты
-
-	//sCAN.CAN_SAP  = ENABLE; //отвечать ACK на собственные пакеты	
 	
-	sCAN.CAN_STM  = DISABLE; //режим самотестирования
-	sCAN.CAN_ROM  = DISABLE; //режим "только чтение"
-
+	// Nominal Bit Time (NBT) = 8 мкс (125Кбит/с);
+	// Принимаем Tq = 0.5 мкс;
+	// т.к. NBT = Tq * (Sync_Seg + PSEG + SEG1 + SEG2), где Sync_Seg = 1 (константа),
+	// тогда PSEG + SEG1 + SEG2 = NBT/Tq - 1. Но надо соблюсти условие:  (8 * Tq) <= NBT <= (25 * Tq).
+	// Дополнительные требования:
+	// • PSEG + SEG1  >=  SEG2
+	// • SEG2  >=  SJW (Sync Jump Width)		
 	sCAN.CAN_PSEG = CAN_PSEG_Mul_2TQ;
 	sCAN.CAN_SEG1 = CAN_SEG1_Mul_7TQ;
 	sCAN.CAN_SEG2 = CAN_SEG2_Mul_6TQ;
@@ -97,10 +107,12 @@ void CAN1_Init(void *arg)
 	//	буфер на прием собственных сообщений или запроса состояния
 	// приемник на CAN_BUFFER_0	
 	CAN_Buffer_RX_Init(MDR_CAN1, 0, DISABLE, (0x7FF << 18), MAKE_FRAME_ID(MSG_TYPE_C, (uint8_t)canContext->Addr)); // фильтр на сообщения C1, C2	
+	//CAN_Buffer_RX_Init(MDR_CAN1, 0, DISABLE, (0x7FF << 18), 0xFFFF0000);
+	
 	// приемник на CAN_BUFFER_1
 	CAN_Buffer_RX_Init(MDR_CAN1, 1, DISABLE, (0x7FF << 18), MAKE_FRAME_ID(MSG_TYPE_C, (uint8_t)canContext->Addr)); // фильтр на сообщения C1, C2
 	
-	//	буфер на передачу ШВ
+	//	буфер на передачу шкалы времени
 	CAN_Buffer_TX_Init(MDR_CAN1, 2); // прередатчик на CAN_BUFFER_2	
 	
 	//	буфер на передачу сообщений С2 состояния модуля
@@ -108,10 +120,10 @@ void CAN1_Init(void *arg)
 	
 	//	буфер на прием сервисных сообщений,  приемник на CAN_BUFFER_4	
 	CAN_Buffer_RX_Init(MDR_CAN1, 4, DISABLE, (0x7FF << 18), MAKE_FRAME_ID(MSG_TYPE_B, (uint8_t)canContext->Addr)); // фильтр на сообщения B	
-
+	
 	CAN_Cmd(MDR_CAN1, ENABLE);
 	
-	xTimerSelfC2Rqst = xTimer_Create(5000, ENABLE, &vTimerSelfC2RqstCallback, ENABLE); //создание таймера
+	xTimerSelfC2Rqst = xTimer_Create(5000, ENABLE, &vTimerSelfC2RqstCallback, ENABLE); //создание таймера отсутствия соединения по CAN
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -127,9 +139,6 @@ void CAN1_RX_Process(void)
 		if (RxMsg.Rx_Header.DLC == 0x08 && RxMsg.Rx_Header.RTR == 0 && 
 		(uint8_t)RxMsg.Data[0] == MAKE_MSG_DATA0(canContext->ID, 0)) //если получено собственное сообщение C2
 		{
-			#ifdef __USE_DBG
-				printf ("get_C2\r\n");
-			#endif
 			xTimer_Delete(xTimerRCVSelfC2RqstTimeout); //удаление таймера таймаута получения сообщения САN
 			fContext->CAN = 0; //статус CAN - исправно
 		}	
@@ -138,9 +147,9 @@ void CAN1_RX_Process(void)
 		{
 			CAN1_C2_Send(); //отправка сообщения С2
 			fContext->CAN = 0; //статус CAN - исправно
-			xTimer_Reload(xTimerSelfC2Rqst); //перезагрузка таймера получения внешних сообщений
+			xTimer_Reload(xTimerSelfC2Rqst); //перезагрузка таймера 
 			#ifdef __USE_DBG
-				printf ("get_C1\r\n");
+				printf ("CAN0-get_C1\r\n");
 			#endif
 		}		
 		CAN_ClearFlag(MDR_CAN1, 0, CAN_STATUS_RX_FULL); //очистка флага "буфер полон"
@@ -152,9 +161,6 @@ void CAN1_RX_Process(void)
 		if (RxMsg.Rx_Header.DLC == 0x08 && RxMsg.Rx_Header.RTR == 0 && 
 				(uint8_t)RxMsg.Data[0] == MAKE_MSG_DATA0(canContext->ID, 0)) // собственное сообщение C2
 		{
-			#ifdef __USE_DBG
-				printf ("get_C2\r\n");
-			#endif
 			xTimer_Delete(xTimerRCVSelfC2RqstTimeout); //сброс таймера
 			fContext->CAN = 0; 												//статус CAN - исправно
 		}
@@ -163,9 +169,9 @@ void CAN1_RX_Process(void)
 		{
 			CAN1_C2_Send(); //отправка сообщения С2
 			fContext->CAN = 0; //статус CAN - исправно
-			xTimer_Reload(xTimerSelfC2Rqst); //перезагрузка таймера получения внешних сообщений
+			xTimer_Reload(xTimerSelfC2Rqst); //перезагрузка таймера 
 			#ifdef __USE_DBG
-				printf ("get_C1\r\n");
+				printf ("CAN1-get_C1\r\n");
 			#endif
 		}		
 		CAN_ClearFlag(MDR_CAN1, 1, CAN_STATUS_RX_FULL); //очистка флага "буфер полон"
@@ -196,10 +202,10 @@ static void vTimerSelfC2RqstCallback(xTimerHandle xTimer)
 {
 	xTimerRCVSelfC2RqstTimeout = xTimer_Create(1100, DISABLE, &vTimerRCVSelfC2RqstTimeoutCallback, ENABLE);
 	
-	if ( CAN_GetCmdStatus(MDR_CAN1) != ENABLE ) 
-		{CAN_Cmd(MDR_CAN1, ENABLE);}	
+	if ( CAN_GetCmdStatus(MDR_CAN1) != ENABLE ) //если CAN был отключён
+		{CAN_Cmd(MDR_CAN1, ENABLE);}	//включения CAN1
 	
-	CAN1_C2_Send();
+	CAN1_C2_Send(); //передача сообщения С2
 }
 
 //---------------------------------таймаут получения сообщения по CAN---------------------------------//
@@ -220,7 +226,7 @@ static void CAN1_A1_Send(void)
 	TxMsg.IDE     = CAN_ID_STD;
   TxMsg.DLC     = 0x08;
   TxMsg.PRIOR_0 = DISABLE;
-  TxMsg.ID      = MAKE_FRAME_ID(MSG_TYPE_A1, (uint8_t)canContext->Addr);
+  TxMsg.ID      = MAKE_FRAME_ID(MSG_TYPE_A1, (uint8_t)MKS2.canContext.Addr);
  
 	MESSAGE_A1.module_type = canContext->ID;
 	MESSAGE_A1.data_type = 1;
@@ -240,6 +246,9 @@ static void CAN1_A1_Send(void)
 																			CAN_STATUS_FRAME_ERR | CAN_STATUS_ACK_ERR );
 	
 	CAN_Transmit(MDR_CAN1, 2, &TxMsg);
+	#ifdef __USE_DBG
+		printf ("put_A1\r\n");
+	#endif
 }
 
 
@@ -250,17 +259,23 @@ static void CAN1_C2_Send(void)
 	TxMsg.IDE     = CAN_ID_STD; //стандартный зоголовок
   TxMsg.DLC     = 0x08;  //8 байт
   TxMsg.PRIOR_0 = DISABLE;
-  TxMsg.ID      = MAKE_FRAME_ID(MSG_TYPE_C, (uint8_t)canContext->Addr);
+  TxMsg.ID      = MAKE_FRAME_ID(MSG_TYPE_C, (uint8_t)MKS2.canContext.Addr);
  
 	MESSAGE_C2.module_id = canContext->ID;
 	MESSAGE_C2.data_type = 0;
 	
-	if ( (fContext->Fail & FAIL_MASK) != 0 ) //флаг интегрального отказа, при наличии хотя бы одного флага отказа
-		{MESSAGE_C2.fail = 1;} 
+	/*#ifdef __USE_DBG
+		printf ("Fail=%x\r\n", MKS2.fContext.Fail);
+	#endif*/
+	
+	if ((fContext->Fail & FAIL_MASK) != 0 ) //флаг интегрального отказа, при наличии хотя бы одного флага отказа
+	{
+		MESSAGE_C2.fail = 1;
+	} 
 	else 
 		{MESSAGE_C2.fail = 0;}
-	
-	MESSAGE_C2.fail_gps = fContext->GPS;
+		
+	MESSAGE_C2.fail_gps = fContext->GPS; 
 	MESSAGE_C2.fail_gps_ant = fContext->GPSAntShortCircuit;
 	MESSAGE_C2.gps_ant_disc = fContext->GPSAntDisconnect; 
 	

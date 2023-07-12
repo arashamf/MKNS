@@ -6,15 +6,15 @@
 static xTIMER xTimerList[MAX_xTIMERS];
 static portTickType xTimeNow;
 
-static void vTimerGPSAntADCCallback(xTimerHandle xTimer);				// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
-static void vTimerGPSAntPowerCallback(xTimerHandle xTimer);			// таймер управления питанием антены GPS приемника
+//static void vTimerGPSAntADCCallback(xTimerHandle xTimer);				// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+//static void vTimerGPSAntPowerCallback(xTimerHandle xTimer);			// таймер управления питанием антены GPS приемника
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer);			// таймер на разрешение выдачу сигнала PPS
 static void vTimerGPSPPSTimeoutCallback(xTimerHandle xTimer); 	// таймаут на отсутствие PPS от GPS приемника
 static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer); 	// таймаут на отсутствие обмена по UART с GPS приемником
 static void vTimerGPSCfgCallback(xTimerHandle xTimer); 
 
-static xTimerHandle xTimerGPSAntADC;			// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
-static xTimerHandle xTimerGPSAntPower;		// таймер управления питанием антены GPS приемника
+//static xTimerHandle xTimerGPSAntADC;			// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+//static xTimerHandle xTimerGPSAntPower;		// таймер управления питанием антены GPS приемника
 static xTimerHandle xTimerGPSPPSCtrl;			// таймер на разрешение выдачу сигнала PPS 
 static xTimerHandle xTimerGPSPPSTimeout; 	// таймаут на отсутствие PPS от GPS приемника
 static xTimerHandle xTimerGPSUARTTimeout; // таймаут на отсутствие обмена по UART с GPS приемником
@@ -142,7 +142,7 @@ static void UART_TIMER_Init(void)
 void UART_TIMER_Callback(void)
 {
 	if(TIMER_GetITStatus(MDR_TIMER2, TIMER_STATUS_CNT_ARR) == SET)
-		{GPS_wait_data_Callback ();} //если сообщение от приёмника получено успешно	
+		{GPS_wait_data_Callback ();} //обрабока данных от приёмника	
 	TIMER_ClearFlag(MDR_TIMER2, TIMER_STATUS_CNT_ARR);
 }
 
@@ -256,18 +256,13 @@ static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 {
 	if (MKS2.tmContext.Valid ) // проверка достоверности 
 	{
-	/*	#ifdef __USE_DBG
+		#ifdef __USE_DBG
 		printf ("PPS_enable\r\n");
-		#endif*/
+		#endif
 		GPS_PPS_ENABLE(); // включение сигнала PPS
 	} 	
 	else 
-	{
-		GPS_PPS_DISABLE(); // выключение сигнала PPS
-	/*	#ifdef __USE_DBG
-		printf ("PPS_disable\r\n");
-		#endif*/
-	} 	
+		{GPS_PPS_DISABLE();} // выключение сигнала PPS	
 
 	xTimer_Delete(xTimerGPSPPSCtrl); //удаление таймера	
 }
@@ -275,25 +270,25 @@ static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 //------------------Таймер таймаута получения сигнала PPS от приемника------------------//
 static void vTimerGPSPPSTimeoutCallback(xTimerHandle xTimer)
 {
-	GPS_PPS_DISABLE(); // запрет выдачи сигнала PPS
+	GPS_PPS_DISABLE(); //выключение выдачи сигнала PPS
 	
-	MKS2.tmContext.ValidTHRESHOLD = 0;
+	MKS2.tmContext.ValidTHRESHOLD = 0; //сброс накопленной доствоерности
 	MKS2.tmContext.Valid = 0;
 }
 
 //------------------Обработка таймаута при отсутствии обмена по UART с GPS-приемником------------------//
 static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer)
 {
-	GPS_PPS_DISABLE(); // запрет на выдачу сигнала PPS
+	GPS_PPS_DISABLE(); //выключение выдачи сигнала PPS
 	
-	MKS2.tmContext.ValidTHRESHOLD = 0;
+	MKS2.tmContext.ValidTHRESHOLD = 0; //сброс накопленной доствоерности
 	MKS2.tmContext.Valid = 0;
 	
-	MKS2.fContext.GPS = 1; //ошибка GPS
+	MKS2.fContext.GPS = 1; //ошибка связи с gps-приемником
 	#ifdef __USE_DBG
 	printf ("GPS_timeout\r\n");
 	#endif
-	GPS_Init(&MNP_PUT_MSG); //перенастройка gps-приемникa
+	GPS_Config(); //перезагрузка и инициализация таймера 
 }
 
 //------------Перезагрузка таймера таймаута при отсутствии обмена по UART с GPS-приемником------------//
@@ -321,7 +316,7 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 			break;
 		
 		case __SYNC_LOAD_CFG: //стадия отправки конф. сообщений приёмнику
-			GPS_Init(&MNP_PUT_MSG);
+			GPS_Init();
 			xTimer_Delete(xTimerGPSCfg); //удаление таймера	
 			break;
 

@@ -11,13 +11,15 @@
 #define CAN_MSG_TYPE_C_ID		0x10
 #define CAN_MSG_TYPE_D_ID		0x20
 
-#define CAN_MSG_TYPE_C_TX_BUFFER_NUM 0		// Буфер для передачи сообщений C2
-#define CAN_MSG_TYPE_C_RX_BUFFER_NUM 1		// Буфер для приема сообщений С (в том числе собственных)
-#define CAN_MSG_TYPE_C_RX_BUFFER_NUM2 2		// Дополнительный буфер для приема сообщений С (в том числе собственных)
+#define CAN_MSG_TYPE_C_RX_BUFFER_NUM 		0		// Буфер 0 для приёма сообщений C1
+#define CAN_MSG_TYPE_C_RX_BUFFER_NUM2 	1		// Буфер 1 для приёма сообщений C1
+#define CAN_MSG_TX_BUFFER_NUM2 					2		// буффер2 для передачи сообщений
+#define CAN_MSG_TX_BUFFER_NUM3 					3 	// буффер3 для передачи сообщений
+#define CAN_MSG_TYPE_B_RX_		4							// Буфер 4 для приёма сообщений B
 
 //- Macro ----------------------------------------
 
-#define MAKE_FRAME_ID( msg_type_id, board_addr) (((((uint32_t)msg_type_id) << 5) | ((board_addr))) << 18)
+#define MAKE_FRAME_ID( msg_type_id, board_addr) (((((uint32_t)msg_type_id) << 5) | (board_addr))<< 18)
 #define MAKE_MSG_DATA0(__module_id, __data_type) ( ( __module_id << 3 ) | __data_type )
 #define GET_MODULE_ADDR( frame_id) (((frame_id) >> 18) & 0x1F)
 #define GET_MSG_TYPE( frame_id) (((frame_id) >> 23) & 0x3F)

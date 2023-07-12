@@ -300,7 +300,7 @@ void Set_GNSS_interval (MNP_MSG_t *, uint32_t );
 void Get_GNSS_interval (MNP_MSG_t *, uint32_t );
 void Read_SN (MNP_MSG_t *);
 void MKS_context_ini (void);
-void GPS_Init(MNP_MSG_t *);
+void GPS_Init(void);
 void MNP_Reset(MNP_MSG_t *);
 static int8_t Parse_MNP_MSG (MNP_MSG_t * );
 static void GPS_Read_Data(MNP_MSG_t *);

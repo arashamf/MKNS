@@ -25,13 +25,10 @@
 #include "MDR32F9Qx_config.h"
 #include "MDR32F9Qx_bkp.h"
 
-//#include "pins.h"
-//#include "HW_Profile.h"
 #include "MNP_msg.h"
 /* Exported types ------------------------------------------------------------*/
 
 /* Exported constants --------------------------------------------------------*/
-extern MNP_MSG_t MNP_PUT_MSG;
 
 /* Exported macro ------------------------------------------------------------*/
 
