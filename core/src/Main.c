@@ -49,14 +49,14 @@ int main( void )
 	
 	CPUClk80MHz_Init();
 	
-	xTimer_Init(&Get_SysTick);
-	SysTick_Init(&xTimer_Task);	
+	SysTick_Init(&xTimer_Task);	///инициализация SysTick с периодом 1 мс
+	xTimer_Init(&Get_SysTick); //возвращает значение SysTick
 	
 	Func_GPIO_Init();
 	
 	MNP_UART_Init (); //инициализация UART
-	MKS_context_ini (); //инициализация структур 
-	CAN1_Init((void*)&MKS2);
+	MKS_context_ini (); //инициализация структуры 
+	Init_CAN((void*)&MKS2);
 	timers_ini (); //инициализация таймеров
 	GPS_Init(); //отправка конфигурационного сообщения приёмнику
 	
@@ -66,18 +66,16 @@ int main( void )
 	
 while(1)
 	{
-		CAN1_RX_Process();
-		
-		if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) 
-			{SET_RED_LED();} 
-		else 
-		{	
-			if ( MKS2.tmContext.Valid ) 
-				{SET_GREEN_LED();} 
-			else
-				{SET_YELLOW_LED();}
-		}
-		
+		CAN_RX_Process();
+		Task_Control_LEDs();
+		if ((MKS2.tmContext.put_PPS == 1) && (MKS2.tmContext.time_data_ready == 1))// отправка сообщения A при достоверной информации от GPS приемника			
+		{
+			MKS2.tmContext.put_PPS = 0;
+			//Delay_MS(2);
+			MKS2.tmContext.time_data_ready = 0;
+			MKS2.canContext.MsgA1Send(); //отправка сообщения типа А1	
+		} 
+
 		#ifdef __USE_IWDG	
 			IWDG_ReloadCounter();
 		#endif
@@ -191,6 +189,20 @@ void InitWatchDog( void )
 	IWDG_ReloadCounter();
 }
 #endif
+
+//---------------------------------------------------------------------------------------------------//
+void Task_Control_LEDs( void )
+{
+	if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) 
+		{SET_RED_LED();} 
+	else 
+	{	
+		if ( MKS2.tmContext.Valid ) 
+			{SET_GREEN_LED();} 
+		else
+			{SET_YELLOW_LED();}
+	}
+}
 
 /*void HardFault_Handler(void)
 {

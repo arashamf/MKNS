@@ -14,7 +14,7 @@
 #include "MDR32F9Qx_eeprom.h"
 #include "MDR32F9Qx_adc.h"
 #include "MDR32F9Qx_can.h"
-//#include "MDR32F9Qx_can_helper.h"
+#include "MDR32F9Qx_can_helper.h"
 #include "MDR32F9Qx_uart.h"
 #include "MDR32F9Qx_timer.h"
 #include "MDR32F9Qx_iwdg.h"
@@ -34,10 +34,10 @@
 
 /* Exported functions prototypes ---------------------------------------------*/
 static void CPUClk80MHz_Init(void);
-static void gpio_init(void);
 bool ClockConfigure (void);
 void InitWatchDog(void);
-void TaskSuperviseStatus(void);
+//void TaskSuperviseStatus(void);
+void Task_Control_LEDs( void );
 
 /* Private defines -----------------------------------------------------------*/
 #define HSE_ON_ATTEMPTS				10

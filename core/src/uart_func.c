@@ -5,6 +5,12 @@
 #include "uart_func.h"
 #include "pins.h"
 
+/* Private functions prototypes -----------------------------------------------*/
+static void UART_TX_Data(MDR_UART_TypeDef* , const uint8_t* , uint16_t );
+static void UART_LoLevel_Init(MDR_UART_TypeDef* , uint32_t , uint32_t , UartMode );
+static void UART_InitIRQ(IRQn_Type IRQn, uint32_t priority);
+static void UARTSetBaud(MDR_UART_TypeDef* , uint32_t , uint32_t );
+
 /* Private define ------------------------------------------------------------*/
 
 /* Private consts ------------------------------------------------------------*/
@@ -16,7 +22,7 @@ uint8_t uart_buffer[BUFFER_SIZE]; //массив для кольцевого буффера
 uint8_t count = 0;
 
 //------------------Инициализация модуля UART------------------//
-void UART_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t uartBaudRate, UartMode mode)
+static void UART_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t uartBaudRate, UartMode mode)
 {
   PORT_InitTypeDef GPIOInitStruct; // Структура для инициализации линий ввода-вывода
 
@@ -67,7 +73,7 @@ void UART_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t u
 
   UART_BRGInit(UARTx, UART_HCLKdiv1);  // Выбор предделителя тактовой частоты модуля UART
 
-	if ( mode ==  UART_RX_MODE) 
+	if ( mode == UART_RX_MODE) 
 	{
 		UART_ITConfig(UARTx, UART_IT_RX, ENABLE); // Выбор источников прерываний (прием данных)
 		UART_InitIRQ(UART_RX_IRQ, 1);
@@ -112,16 +118,16 @@ void DBG_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uint32_t ua
   UART_Cmd(UARTx, ENABLE); // Разрешение работы модуля UART
 }
 
-//------------------
-void UART_InitIRQ(IRQn_Type IRQn, uint32_t priority)
+//----------------------------------------------------------------------------------------------//
+static void UART_InitIRQ(IRQn_Type IRQn, uint32_t priority)
 {
   NVIC_SetPriority(IRQn, priority);  // Назначение приоритета аппаратного прерывания от UART
 
   NVIC_EnableIRQ(IRQn); // Разрешение аппаратных прерываний от UART
 }	
 
-//---------------------------------------------------------------------------
-void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
+//----------------------------------------------------------------------------------------------//
+static void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
 {
 	uint32_t divider = freqCPU / (baudRate >> 2);
 	uint32_t CR_tmp = UARTx->CR;
@@ -137,7 +143,7 @@ void UARTSetBaud(MDR_UART_TypeDef* UARTx, uint32_t baudRate, uint32_t freqCPU)
   UARTx->CR = CR_tmp;
 }
 
-//---------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------//
 void MNP_UART_Init (void)
 {	
 	UART_LoLevel_Init(UART_TX, UART_TX_CLOCK, UARTx_BAUD_RATE, UART_TX_MODE);  //инициализация UART1 для передачи
@@ -149,8 +155,8 @@ void MNP_UART_Init (void)
 	RING_Init (&RING_buffer, uart_buffer, sizeof (uart_buffer)); //инициализация кольцевого буффера
 }
 
-//---------------------------------------------------------------------------
-void UART_TX_Data(MDR_UART_TypeDef* UARTx, const uint8_t* data, uint16_t len)
+//-------------------------------------отправка массива по UART-------------------------------------//
+static void UART_TX_Data(MDR_UART_TypeDef* UARTx, const uint8_t* data, uint16_t len)
 {
 	uint16_t count = 0;
 	
@@ -161,13 +167,13 @@ void UART_TX_Data(MDR_UART_TypeDef* UARTx, const uint8_t* data, uint16_t len)
 	}
 }
 
-//---------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------//
 void MNP_UART_MSG_Puts (const uint8_t* data, uint16_t len)
 {
 	UART_TX_Data(UART_TX, data, len);
 }
 
-//---------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------//
 void DBG_PutString (char * str)
 {
 	char smb;

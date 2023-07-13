@@ -17,6 +17,8 @@ extern "C" {
 #define CMD_CODE_SATTELITES_MASK 6
 
 //Exported types -----------------------------------------------------------------//
+
+//------------------------------------------------------------------
 typedef enum
 {
 	MSG_3000      = 0x0BB8, //messages 3000
@@ -282,6 +284,17 @@ typedef struct
 		__PARSER
 	}rx_state;	
 
+	enum 
+	{
+		TYPE3000 = 1,
+		TYPE3001,
+		TYPE3011,
+		TYPE3002,
+		TYPE3003,
+		TYPE3006,
+		TYPE2200
+	}mnp_msg_type;	
+	
 }MNP_MSG_t;
 
 extern MKS2_t MKS2;
@@ -290,9 +303,6 @@ extern MNP_M7_CFG_t MNP_M7_CFG;
 //Constants ----------------------------------------------------------------------//
 
 //Private prototypes--------------------------------------------------------------//
-static uint16_t MNP_CalcChkSum( uint16_t *Array, int WordsCount );
-void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount);
-void MNP_M7_init (MNP_MSG_t *);
 void read_config_MNP ( MNP_MSG_t *);
 void read_flash_MNP ( MNP_MSG_t *);
 void put_msg2000 (MNP_MSG_t *);
@@ -302,8 +312,6 @@ void Read_SN (MNP_MSG_t *);
 void MKS_context_ini (void);
 void GPS_Init(void);
 void MNP_Reset(MNP_MSG_t *);
-static int8_t Parse_MNP_MSG (MNP_MSG_t * );
-static void GPS_Read_Data(MNP_MSG_t *);
 int8_t GPS_wait_data_Callback (void);
 void GPS_Config(void);
 #ifdef __cplusplus

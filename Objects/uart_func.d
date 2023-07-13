@@ -18,6 +18,7 @@
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_eeprom.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_adc.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_can.h
+.\objects\uart_func.o: .\core\inc\MDR32F9Qx_can_helper.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_uart.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h

@@ -56,28 +56,13 @@ int8_t Get_Module_Address(void)
 		addr |= ( (!PORT_ReadInputDataBit( pins[count].PORTx, pins[count].PORT_Pin )) << count); 
 	}*/
 	addr = 0x6;
-	#ifdef __USE_DBG
+/*	#ifdef __USE_DBG
 		printf ("my_adress=%d\r\n", addr);
-	#endif			 
+	#endif	*/		 
 	if ( addr != 0x1F ) 
 		{return addr;} 
 	else 
 		{return -1;}
-}
-
-//---------------------------------------------------------------------------------------------------//
-void Task_Control_LEDs( void )
-{
-/*	if( g_MyFlags.CAN_Fail == 1 ) //если на CAN шине ошибка
-	{
-		LED_GREEN(OFF); //красный включён, зелёный выключен
-		LED_RED(ON); 
-	}
-	else 
-	{
-		LED_RED(OFF);
-		LED_GREEN(ON);
-	}*/
 }
 
 //---------------------------------------------------------------------------------------------------//

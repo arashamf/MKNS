@@ -21,6 +21,7 @@
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_eeprom.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_adc.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_can.h
+.\objects\mdr32f9qx_it.o: .\core\inc\MDR32F9Qx_can_helper.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_uart.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h

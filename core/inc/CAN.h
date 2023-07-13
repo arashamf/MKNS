@@ -25,8 +25,8 @@
 #define GET_MSG_TYPE( frame_id) (((frame_id) >> 23) & 0x3F)
 
 //- Functions ------------------------------------
-void CAN1_Init(void *arg);
-void CAN1_RX_Process(void);
-void CAN1_TX_Process(void);
+void Init_CAN(void *arg);
+void CAN_RX_Process(void);
+void CAN_TX_Process(void);
 
 #endif

@@ -227,12 +227,12 @@ void GPS_PPS_IRQ_Callback(void)
 	{
 		TIMER_ClearFlag(MDR_TIMER3, TIMER_STATUS_CCR_CAP_CH4); //сброс флага захвата канала4 таймера3
 		
-		TIMER_SetCounter(MDR_TIMER1, 0); //сброс счётчика таймера 1
-		TIMER_Cmd(MDR_TIMER1, ENABLE); // запуск таймера 1, ограничивающего длительность импульса PPS
-		
-		// запуск таймера на выдачу сигнала PPS 
-		xTimerGPSPPSCtrl = xTimer_Create(850, DISABLE, &vTimerGPSPPSCtrlCallback, ENABLE); 
-		
+		if (MKS2.tmContext.Valid == 1) // проверка достоверности данных времени
+		{
+			TIMER_SetCounter(MDR_TIMER1, 0); //сброс счётчика таймера 1
+			TIMER_Cmd(MDR_TIMER1, ENABLE); // запуск таймера 1, ограничивающего длительность импульса PPS			
+			xTimerGPSPPSCtrl = xTimer_Create(850, DISABLE, &vTimerGPSPPSCtrlCallback, ENABLE); // запуск таймера на выдачу сигнала PPS  
+		}
 		xTimer_Reload(xTimerGPSPPSTimeout); //перезагрузка таймера таймаута получения сигнала PPS
 		/*#ifdef __USE_DBG
 		printf ("get_PPS\r\n");
@@ -246,19 +246,20 @@ void GPS_PPS_DISABLE_IRQ_Callback(void)
 	if ( TIMER_GetITStatus(MDR_TIMER1, TIMER_STATUS_CNT_ARR) == SET ) 
 	{
 		TIMER_ClearFlag(MDR_TIMER1, TIMER_STATUS_CNT_ARR); //сброс флага	
-		GPS_PPS_DISABLE(); // запрет выдачи сигнала PPS		
+		GPS_PPS_DISABLE(); // отключение сигнала PPS
 		TIMER_Cmd(MDR_TIMER1, DISABLE); //выключение таймера 1
+		#ifdef __USE_DBG
+			printf ("PPS_end\r\n");
+		#endif
+		MKS2.tmContext.put_PPS = 1;
 	}	
 }
 
-//------------------Таймер на разрешение выдачу сигнала PPS------------------//
+//------------------Таймер на выдачу сигнала PPS------------------//
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 {
-	if (MKS2.tmContext.Valid ) // проверка достоверности 
+	if (MKS2.tmContext.Valid ) //проверка достоверности данных времени
 	{
-		#ifdef __USE_DBG
-		printf ("PPS_enable\r\n");
-		#endif
 		GPS_PPS_ENABLE(); // включение сигнала PPS
 	} 	
 	else 

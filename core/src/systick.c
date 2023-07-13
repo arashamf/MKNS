@@ -1,11 +1,11 @@
 #include "systick.h"
 #include "HW_Profile.h"
 
-// переменные
+//переменные---------------------------------------------------------------------
 static uint32_t TicksCounter = 0;
 static SysTick_CALLBACK SysTick_CallbackFunction = NULL;
 
-// инициализация SysTick с периодом 1 мс 
+//инициализация SysTick с периодом 1 мс------------------------------------------ 
 void SysTick_Init(SysTick_CALLBACK CallbackFunction)
 {
 	SysTick->CTRL = 0;
@@ -16,7 +16,7 @@ void SysTick_Init(SysTick_CALLBACK CallbackFunction)
 	SysTick_CallbackFunction = CallbackFunction;
 }
 
-// увеличивает значение SysTick при срабатывании прерывания
+// увеличивает значение SysTick при срабатывании прерывания----------------------
 void SysTick_Handler(void)
 {
     TicksCounter++;
@@ -24,13 +24,13 @@ void SysTick_Handler(void)
 			{SysTick_CallbackFunction(TicksCounter);}
 }
 
-// возвращает значение SysTick
+// возвращает значение SysTick----------------------------------------------------
 uint32_t Get_SysTick(void)
 {
 	return TicksCounter;
 }
  
-// задержка в мс
+// задержка в мс------------------------------------------------------------------
 void Delay_MS(uint32_t ms)
 {	
   uint32_t ticks;

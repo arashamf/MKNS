@@ -19,14 +19,16 @@
 
 //CAN--------------------------------------------------
 #define MY_MDR_CAN							MDR_CAN1
+#define CAN_CLOCK								RST_CLK_PCLK_CAN1
 
-#define MY_CAN_RX_PIN						PORT_Pin_7
-#define MY_CAN_RX_PORT					MDR_PORTA
-#define MY_CAN_RX_PORT_FUNC			PORT_FUNC_ALTER
+#define CAN_PIN_CLOCK 					RST_CLK_PCLK_PORTA
+#define CAN_RX_PIN							PORT_Pin_7
+#define CAN_RX_PORT							MDR_PORTA
+#define CAN_RX_PORT_FUNC				PORT_FUNC_ALTER
 
-#define MY_CAN_TX_PIN						PORT_Pin_6
-#define MY_CAN_TX_PORT					MDR_PORTA
-#define MY_CAN_TX_PORT_FUNC			PORT_FUNC_ALTER
+#define CAN_TX_PIN							PORT_Pin_6
+#define CAN_TX_PORT							MDR_PORTA
+#define CAN_TX_PORT_FUNC				PORT_FUNC_ALTER
 
 //Связь с gps-модулем----------------------------------
 #define UART_RX									MDR_UART2

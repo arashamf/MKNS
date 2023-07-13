@@ -11,14 +11,20 @@
 #include "timers.h"
 #include "ring_buffer.h"
 
+/* Private functions prototypes -----------------------------------------------*/
+static int8_t Parse_MNP_MSG (MNP_MSG_t * );
+static void GPS_Read_Data(MNP_MSG_t *);
+static uint16_t MNP_CalcChkSum( uint16_t *Array, int WordsCount );
+static void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount);
+static void MNP_M7_init ( MNP_MSG_t *Msg);
 //Private defines -------------------------------------------------------------------------------------//
 
 //Constants -------------------------------------------------------------------------------------------//
 
 //Private variables -----------------------------------------------------------------------------------//
 MKS2_t MKS2; //объявление структуры типа MKS2_t
-MNP_MSG_t MNP_GET_MSG; //объявление структуры для приёма сообщения от приёмника
-MNP_MSG_t MNP_PUT_MSG; //объявление структуры сообщения для отправки приёмнику
+static MNP_MSG_t MNP_GET_MSG; //объявление структуры для приёма сообщения от приёмника
+static MNP_MSG_t MNP_PUT_MSG; //объявление структуры сообщения для отправки приёмнику
 MNP_M7_CFG_t MNP_M7_CFG; //объявление структуры перезагрузки и настройки приёмника
 
 //-----------------------------------------------------------------------------------------------------//
@@ -36,7 +42,7 @@ static uint16_t MNP_CalcChkSum	(uint16_t *Array, int WordsCount)
 }
 
 //-----------------------------------------------------------------------------------------------------//
-void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount)
+static void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount)
 {
 	
 	Msg->msg_header.MNP_header.sync = MNP_SYNC_CHAR;
@@ -54,7 +60,7 @@ void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount)
 
 
 //-----------------------------------------------------------------------------------------------------//
-void MNP_M7_init ( MNP_MSG_t *Msg)
+static void MNP_M7_init ( MNP_MSG_t *Msg)
 {
 	Msg->payload.msg3006.command_code.cmd_3006.RAM = 0x01; //источник - RAM приёмника
 	Msg->payload.msg3006.command_code.cmd_3006.flash = 0x00; //источник - flash приёмника
@@ -184,10 +190,12 @@ void Read_SN (MNP_MSG_t *Msg)
 //-------------------------------------------------------------------------------------------------//
 void MKS_context_ini (void)
 {
-	MNP_GET_MSG.rx_state = __SYNC_BYTE1; 
-		
-	MKS2.tmContext.Time2k = 0, //количество секунд с 01.01.2000
-	MKS2.tmContext.TAI_UTC_offset = 0, //разница между атомным временем и временем UTC
+	MNP_GET_MSG.rx_state = __SYNC_BYTE1;
+	
+	MKS2.tmContext.time_data_ready = 0;						//флаг готовности данных времени
+	MKS2.tmContext.put_PPS = 0;										//флаг отправки метки времени
+	MKS2.tmContext.Time2k = 0, 										//количество секунд с 01.01.2000
+	MKS2.tmContext.TAI_UTC_offset = 0, 						//разница между атомным временем и временем UTC
 	MKS2.tmContext.LeapS_59 = 0,									//високосная секунда 
 	MKS2.tmContext.LeapS_61 = 0,									//високосная секунда
 	MKS2.tmContext.ValidTHRESHOLD = 0,						//накопленная достоверность данных		
@@ -202,7 +210,7 @@ void GPS_Init(void)
 {
 	MNP_M7_init (&MNP_PUT_MSG);	
 	Delay_MS(50);
-	Get_GNSS_interval (&MNP_PUT_MSG, 2000); //установка интервала сообщений 3000 (2000=1c)
+	Set_GNSS_interval (&MNP_PUT_MSG, 2000); //установка интервала сообщений 2000 (2000=1c)
 }
 
 //---------------------------------сообщение перезагрузки GPS приемника---------------------------------//
@@ -315,13 +323,13 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							Msg->payload.msg3000.minute, Msg->payload.msg3000.second);
 							printf ("%s", DBG_buffer);
 							#endif
-							ret = 1; //результат парсинга равен 1 
+							ret = TYPE3000; //результат парсинга равен 1 
 							break;
 						
 						case MSG_3001: 
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
-							ret = 2; //результат парсинга равен 2
+							ret = TYPE3001; //результат парсинга равен 2
 							break;
 						
 						case MSG_3011: 
@@ -329,7 +337,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
 							#endif
-							ret = 3; //результат парсинга равен 3
+							ret = TYPE3011; //результат парсинга равен 3
 							break;
 						
 						case MSG_3002:
@@ -337,7 +345,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
 							#endif
-							ret = 4; //результат парсинга равен 4
+							ret = TYPE3002; //результат парсинга равен 4
 							break;
 						
 						case MSG_3003:
@@ -345,7 +353,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							sprintf (DBG_buffer, (char *)"id=%x, data_size=%x\r\n", Msg->msg_header.MNP_header.msg_id, Msg->msg_header.MNP_header.data_size);				
 							printf ("%s", DBG_buffer);
 							#endif
-							ret = 5; //результат парсинга равен 5
+							ret = TYPE3003; //результат парсинга равен 5
 							break;
 						
 						case MSG_3006:
@@ -359,7 +367,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 								printf ("%s", DBG_buffer);
 							}
 							#endif
-							ret = 6; //результат парсинга равен 6
+							ret = TYPE3006; //результат парсинга равен 6
 							break;
 						
 						case MSG_2200:
@@ -368,7 +376,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							Msg->msg_header.MNP_header.data_size, Msg->msg_header.MNP_header.dummy);				
 							printf ("%s", DBG_buffer);
 							#endif
-							ret = 7; //результат парсинга равен 7
+							ret = TYPE2200; //результат парсинга равен 7
 							break;
 					
 						default:
@@ -397,7 +405,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 	return ret; //возврат результата парсинга 
 }
 
-//------------------------------Обработка временных данных от GPS приемника------------------------------//
+//------------------------------Обработка данных времени от GPS приемника------------------------------//
 static void GPS_Read_Data(MNP_MSG_t *Msg)
 {
 	struct TM TimeStamp;
@@ -454,12 +462,14 @@ int8_t GPS_wait_data_Callback (void)
 		if ((result = Parse_MNP_MSG (&MNP_GET_MSG)) > 0) //если сообщение от приёмника получено полностью
 		{
 			MKS2.fContext.GPS = 0; //соединение с gps-приёмником успешно установлено
-			GPS_Read_Data(&MNP_GET_MSG);
-			
 			Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута
 			
-			if (MKS2.tmContext.Valid) // отправка сообщения A при достоверной информации от GPS приемника
-				{MKS2.canContext.MsgA1Send();} //отправка сообщения типа А1			
+			if (result == TYPE3000) //если получено сообщение 3000 (навигационное решение) от приёмника 
+			{
+				GPS_Read_Data(&MNP_GET_MSG); //Обработка данных времени от приемника					
+				if (MKS2.tmContext.Valid) //разрешение отправки сообщения A при достоверной информации от приемника
+					{MKS2.tmContext.time_data_ready = 1;} //установка флага получения валидных данных времени от приёмника	
+			}
 		}	
 	}
 	return result;

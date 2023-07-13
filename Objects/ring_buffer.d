@@ -20,6 +20,7 @@
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_eeprom.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_adc.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_can.h
+.\objects\ring_buffer.o: .\core\inc\MDR32F9Qx_can_helper.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_uart.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
