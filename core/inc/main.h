@@ -36,12 +36,11 @@
 static void CPUClk80MHz_Init(void);
 bool ClockConfigure (void);
 void InitWatchDog(void);
-//void TaskSuperviseStatus(void);
 void Task_Control_LEDs( void );
 
 /* Private defines -----------------------------------------------------------*/
 #define HSE_ON_ATTEMPTS				10
-#define __USE_DBG
-//#define __USE_IWDG
+//#define __USE_DBG
+#define __USE_IWDG
 
 #endif 

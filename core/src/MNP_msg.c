@@ -11,17 +11,17 @@
 #include "timers.h"
 #include "ring_buffer.h"
 
-/* Private functions prototypes -----------------------------------------------*/
+// Private functions prototypes ------------------------------------------------------------------//
 static int8_t Parse_MNP_MSG (MNP_MSG_t * );
 static void GPS_Read_Data(MNP_MSG_t *);
 static uint16_t MNP_CalcChkSum( uint16_t *Array, int WordsCount );
 static void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount);
 static void MNP_M7_init ( MNP_MSG_t *Msg);
-//Private defines -------------------------------------------------------------------------------------//
+//Private defines -------------------------------------------------------------------------------//
 
-//Constants -------------------------------------------------------------------------------------------//
+//Constants -------------------------------------------------------------------------------------//
 
-//Private variables -----------------------------------------------------------------------------------//
+//Private variables -----------------------------------------------------------------------------//
 MKS2_t MKS2; //объ€вление структуры типа MKS2_t
 static MNP_MSG_t MNP_GET_MSG; //объ€вление структуры дл€ приЄма сообщени€ от приЄмника
 static MNP_MSG_t MNP_PUT_MSG; //объ€вление структуры сообщени€ дл€ отправки приЄмнику

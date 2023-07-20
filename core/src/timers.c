@@ -233,14 +233,12 @@ void GPS_PPS_IRQ_Callback(void)
 			TIMER_Cmd(MDR_TIMER1, ENABLE); // запуск таймера 1, ограничивающего длительность импульса PPS			
 			xTimerGPSPPSCtrl = xTimer_Create(850, DISABLE, &vTimerGPSPPSCtrlCallback, ENABLE); // запуск таймера на выдачу сигнала PPS  
 		}
-		xTimer_Reload(xTimerGPSPPSTimeout); //перезагрузка таймера таймаута получения сигнала PPS
-		/*#ifdef __USE_DBG
-		printf ("get_PPS\r\n");
-		#endif*/
+		//xTimer_Reload(xTimerGPSPPSTimeout); //перезагрузка таймера таймаута получения сигнала PPS
+		xTimer_Delete(xTimerGPSPPSTimeout);  //удаление таймера таймаута получения сигнала PPS
 	}	
 }
 
-//------------------Прерывание таймера1, ограничивающее длительность импульса PPS------------------//
+//-------------------------Прерывание таймера1, ограничивающее длительность импульса PPS-------------------------//
 void GPS_PPS_DISABLE_IRQ_Callback(void)
 {
 	if ( TIMER_GetITStatus(MDR_TIMER1, TIMER_STATUS_CNT_ARR) == SET ) 
@@ -248,19 +246,23 @@ void GPS_PPS_DISABLE_IRQ_Callback(void)
 		TIMER_ClearFlag(MDR_TIMER1, TIMER_STATUS_CNT_ARR); //сброс флага	
 		GPS_PPS_DISABLE(); // отключение сигнала PPS
 		TIMER_Cmd(MDR_TIMER1, DISABLE); //выключение таймера 1
+		
 		#ifdef __USE_DBG
 			printf ("PPS_end\r\n");
 		#endif
+		
 		MKS2.tmContext.put_PPS = 1;
 	}	
 }
 
-//------------------Таймер на выдачу сигнала PPS------------------//
+//-----------------------------------------Таймер на выдачу сигнала PPS-----------------------------------------//
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 {
 	if (MKS2.tmContext.Valid ) //проверка достоверности данных времени
 	{
 		GPS_PPS_ENABLE(); // включение сигнала PPS
+		//создание таймера таймаута при отсутствии сигнала PPS от GPS приемника
+		xTimerGPSPPSTimeout = xTimer_Create(500, DISABLE, &vTimerGPSPPSTimeoutCallback, ENABLE); 
 	} 	
 	else 
 		{GPS_PPS_DISABLE();} // выключение сигнала PPS	
@@ -268,16 +270,20 @@ static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer)
 	xTimer_Delete(xTimerGPSPPSCtrl); //удаление таймера	
 }
 
-//------------------Таймер таймаута получения сигнала PPS от приемника------------------//
+//-------------------------------Таймер таймаута получения сигнала PPS от приемника-------------------------------//
 static void vTimerGPSPPSTimeoutCallback(xTimerHandle xTimer)
 {
 	GPS_PPS_DISABLE(); //выключение выдачи сигнала PPS
 	
 	MKS2.tmContext.ValidTHRESHOLD = 0; //сброс накопленной доствоерности
 	MKS2.tmContext.Valid = 0;
+	
+	#ifdef __USE_DBG
+		printf ("PPS_timeout\r\n");
+	#endif
 }
 
-//------------------Обработка таймаута при отсутствии обмена по UART с GPS-приемником------------------//
+//-----------------------Обработка таймаута при отсутствии обмена по UART с GPS-приемником-----------------------//
 static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer)
 {
 	GPS_PPS_DISABLE(); //выключение выдачи сигнала PPS
@@ -286,9 +292,11 @@ static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer)
 	MKS2.tmContext.Valid = 0;
 	
 	MKS2.fContext.GPS = 1; //ошибка связи с gps-приемником
+	
 	#ifdef __USE_DBG
-	printf ("GPS_timeout\r\n");
+		printf ("GPS_timeout\r\n");
 	#endif
+	
 	GPS_Config(); //перезагрузка и инициализация таймера 
 }
 
@@ -326,17 +334,17 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 	}
 }
 
-//------------------------------------//
+//--------------------------------инициализация аппаратных и программных таймеров--------------------------------//
 void timers_ini (void)
 {
 	UART_TIMER_Init(); //инициализация таймера таймаута при отсутствии обмена по UART с GPS-приемником
 	GPS_PPS_EXTI_Init (); //инициализация таймера 3 и таймера 1
 	
-	//таймер таймаута на отсутствие PPS от GPS приемника
-	xTimerGPSPPSTimeout = xTimer_Create(1100, DISABLE, &vTimerGPSPPSTimeoutCallback, ENABLE);
+	//таймер таймаута при отсутствии сигнала PPS от GPS приемника
+	//xTimerGPSPPSTimeout = xTimer_Create(1100, ENABLE, &vTimerGPSPPSTimeoutCallback, ENABLE);
  	
-	//таймер таймаута на отсутствие обмена по UART с GPS приемником
-	xTimerGPSUARTTimeout = xTimer_Create(5000, DISABLE, &vTimerGPSUARTTimeoutCallback, ENABLE); //перезагрузка GPS-модуля через 5с
+	//таймер таймаута при отсутствии получения сообщений по UART от GPS приемника
+	xTimerGPSUARTTimeout = xTimer_Create(5000, ENABLE, &vTimerGPSUARTTimeoutCallback, ENABLE); //перезагрузка и инициализация GPS-модуля через 5с 
 	
 	//таймер детектирования антены (не подключена, подключена, КЗ)
 	//xTimerGPSAntADC = xTimer_Create(250, ENABLE, &vTimerGPSAntADCCallback, ENABLE); 						

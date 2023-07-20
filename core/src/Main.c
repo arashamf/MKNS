@@ -52,7 +52,7 @@ int main( void )
 	SysTick_Init(&xTimer_Task);	///инициализация SysTick с периодом 1 мс
 	xTimer_Init(&Get_SysTick); //возвращает значение SysTick
 	
-	Func_GPIO_Init();
+	Func_GPIO_Init(); //инициализация GPIO
 	
 	MNP_UART_Init (); //инициализация UART
 	MKS_context_ini (); //инициализация структуры 
@@ -61,7 +61,7 @@ int main( void )
 	GPS_Init(); //отправка конфигурационного сообщения приёмнику
 	
 	#ifdef __USE_IWDG
-		IWDG_Init(); //инициализация сторожевого таймера
+		InitWatchDog(); //инициализация сторожевого таймера
 	#endif
 	
 while(1)
@@ -70,10 +70,9 @@ while(1)
 		Task_Control_LEDs();
 		if ((MKS2.tmContext.put_PPS == 1) && (MKS2.tmContext.time_data_ready == 1))// отправка сообщения A при достоверной информации от GPS приемника			
 		{
-			MKS2.tmContext.put_PPS = 0;
-			//Delay_MS(2);
-			MKS2.tmContext.time_data_ready = 0;
 			MKS2.canContext.MsgA1Send(); //отправка сообщения типа А1	
+			MKS2.tmContext.put_PPS = 0; //сброс флага отправки сигнала секундной метки
+			MKS2.tmContext.time_data_ready = 0; //сброс флага готовности данных времени
 		} 
 
 		#ifdef __USE_IWDG	
@@ -107,7 +106,7 @@ static void CPUClk80MHz_Init(void)
   /* CPU_C1_SEL = HSE */
   RST_CLK_CPU_PLLconfig(RST_CLK_CPU_PLLsrcHSEdiv1, RST_CLK_CPU_PLLmul10); //Select HSE clock as CPU_PLL input clock source & set PLL multiplier
  
-		RST_CLK_CPU_PLLcmd(ENABLE); //enable CPU_PLL
+	RST_CLK_CPU_PLLcmd(ENABLE); //enable CPU_PLL
   while (RST_CLK_CPU_PLLstatus() != SUCCESS) {}; //ожидание готовности CPU_PLL 
 
 	RST_CLK_PCLKcmd(RST_CLK_PCLK_EEPROM, ENABLE); 	// Enables the RST_CLK_PCLK_EEPROM 
@@ -182,9 +181,8 @@ void InitWatchDog( void )
 	RST_CLK_PCLKcmd(RST_CLK_PCLK_IWDG,ENABLE);
 	IWDG_WriteAccessEnable();
 	IWDG_SetPrescaler(IWDG_Prescaler_64);	// 40000/64=625 Гц
-	while( IWDG_GetFlagStatus( IWDG_FLAG_PVU ) != 1 )
-	{}
-	IWDG_SetReload( 2500 );	// 2500 / 652 = 4 сек
+	while( IWDG_GetFlagStatus( IWDG_FLAG_PVU ) != 1 ){}
+	IWDG_SetReload (2500);	// 2500 / 652 = 4 сек
 	IWDG_Enable();
 	IWDG_ReloadCounter();
 }
@@ -193,7 +191,7 @@ void InitWatchDog( void )
 //---------------------------------------------------------------------------------------------------//
 void Task_Control_LEDs( void )
 {
-	if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) 
+	if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) //если есть аппаратные неисправности
 		{SET_RED_LED();} 
 	else 
 	{	

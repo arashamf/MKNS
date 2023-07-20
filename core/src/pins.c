@@ -1,13 +1,17 @@
 
-// Includes------------------------------------------------------------------------------------------//
+// Includes---------------------------------------------------------------------------------------//
 #include "main.h"
 #include "pins.h"
 #include "HW_Profile.h"
 #include "systick.h"
 
 static void Pins_Address_Init(const TPortPin *, uint8_t );
+static void InitLED_Pin( const TPortPin *PortPin );
+static void InitBiLED( const TBiLED *pBiLed );
+static void GPS_nRST_Init(void);
+static void PPS_Pin_Init(void);
 
-//---------------------------------------------------------------------------------------------------//
+//--------------------инициализация пинов получения адреса модуля в кроссплате--------------------//
 static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
 {
 	uint8_t count;	
@@ -16,9 +20,9 @@ static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
 	RST_CLK_PCLKcmd(BACKPLANE_PIN_CLOCK, ENABLE);
 	PORT_StructInit( &sPort );
 	
-	sPort.PORT_OE    = PORT_OE_IN;
-	sPort.PORT_FUNC  = PORT_FUNC_PORT;
-	sPort.PORT_MODE  = PORT_MODE_DIGITAL;
+	sPort.PORT_OE    = PORT_OE_IN; //режим - вход
+	sPort.PORT_FUNC  = PORT_FUNC_PORT;  //функция вывода
+	sPort.PORT_MODE  = PORT_MODE_DIGITAL;  //цифровой режим пина
 	sPort.PORT_SPEED = PORT_SPEED_SLOW;
 	
 	for(count = 0 ; count < number_pins; count++ )
@@ -29,7 +33,7 @@ static void Pins_Address_Init(const TPortPin * pins, uint8_t number_pins)
 	}
 }
 
-//---------------------------------------------------------------------------------------------------//
+//------------------------------получение адреса модуля в кроссплате------------------------------//
 int8_t Get_Module_Address(void)
 {
 	uint8_t count = 0;
@@ -45,10 +49,10 @@ int8_t Get_Module_Address(void)
 		{ BACKPLANE_ADDR4_PORT, BACKPLANE_ADDR4_PIN }
 	};
 	
-	/*number_pins = sizeof(pins)/sizeof (pins[0]); //количество адресных пинов
+	/*number_pins = sizeof(pins)/sizeof (pins[0]); //количество пинов получения адреса
 	Pins_Address_Init(pins, number_pins);
 	
-	Delay_MS(600);
+	Delay_MS(500);
 
 	//for(count = 0 ; count < number_pins; count++ )
 	for( count = 0 ; count < 5; count++ )
@@ -59,40 +63,40 @@ int8_t Get_Module_Address(void)
 /*	#ifdef __USE_DBG
 		printf ("my_adress=%d\r\n", addr);
 	#endif	*/		 
-	if ( addr != 0x1F ) 
-		{return addr;} 
+	if ( addr != 0x00 ) 
+		{return addr;} //если получен адрес
 	else 
 		{return -1;}
 }
 
-//---------------------------------------------------------------------------------------------------//
+//-----------------------------активация режима включения светодиода-----------------------------//
 void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color )
 {
 	switch( Color )
 	{
-		case LED_BLACK:
+		case LED_BLACK: //бесцветный
 			PORT_ResetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_ResetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 
-		case LED_GREEN:
+		case LED_GREEN: //зелёный
 			PORT_SetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_ResetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 
-		case LED_RED:
+		case LED_RED: //красный
 			PORT_ResetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_SetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 
-		case LED_YELLOW:
+		case LED_YELLOW: //жёлтый
 			PORT_SetBits( pBiLed->Red.PORTx, pBiLed->Red.PORT_Pin );
 			PORT_SetBits( pBiLed->Green.PORTx, pBiLed->Green.PORT_Pin );
 		break;
 	}
 }
 
-//---------------------------------------------------------------------------------------------------//
+//---------------------------инициализация пина управления светодиодом---------------------------//
 static void InitLED_Pin( const TPortPin *PortPin )  
 {
   PORT_InitTypeDef port_init_struct;
@@ -109,15 +113,15 @@ static void InitLED_Pin( const TPortPin *PortPin )
 	PORT_Init( PortPin->PORTx, &port_init_struct );
 }
 
-//---------------------------------------------------------------------------------------------------//
-void InitBiLED( const TBiLED *pBiLed )  
+//---------------------------инициализация пинов управления светодиодом---------------------------//
+static void InitBiLED( const TBiLED *pBiLed )  
 {
 	InitLED_Pin( &pBiLed->Red );
 	InitLED_Pin( &pBiLed->Green );
 }
 
-//---------------------------------------------------------------------------------------------------//
-void GPS_nRST_Init(void)
+//-----------------------------инициализация пина сброса GPS-приёмника-----------------------------//
+static void GPS_nRST_Init(void)
 {
 	PORT_InitTypeDef PORT_InitStructure;
 	RST_CLK_PCLKcmd(GPS_CLOCK_nRST, ENABLE);
@@ -142,8 +146,8 @@ void GPS_Reset(FunctionalState NewState)
 		{PORT_SetBits(GPS_PORT_nRST, GPS_PIN_nRST);}
 }
 
-//-----------------------------------------------------------------------------------------------------//
-void PPS_Pin_Init(void)
+//----------------------------инициализация пина получения сигнала PPS----------------------------//
+static void PPS_Pin_Init(void)
 {
 	PORT_InitTypeDef PORT_InitStructure;
 	RST_CLK_PCLKcmd(CLOCK_PPS_PULSE_PIN, ENABLE);
@@ -158,15 +162,15 @@ void PPS_Pin_Init(void)
 	PORT_Init(PPS_PULSE_PORT, &PORT_InitStructure);
 }
 
-//-----------------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------//
 void Func_GPIO_Init(void)
 {
 	InitBiLED(&m_Led);
-	SetBiLED(&m_Led, LED_BLACK);
+	SetBiLED(&m_Led, LED_BLACK); //установка бесцветного режима светодиода
 	
-	PPS_Pin_Init ();
+	PPS_Pin_Init (); //инициализация пина получения сигнала PPS
 	GPS_PPS_DISABLE(); //отключение выдачи секундной метки
 	
-	GPS_nRST_Init();
+	GPS_nRST_Init(); //инициализация пина сброса GPS-приёмника
 	GPS_Reset(DISABLE); //включение GPS-модуля
 }

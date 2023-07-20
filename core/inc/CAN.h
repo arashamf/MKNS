@@ -27,6 +27,5 @@
 //- Functions ------------------------------------
 void Init_CAN(void *arg);
 void CAN_RX_Process(void);
-void CAN_TX_Process(void);
 
 #endif

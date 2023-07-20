@@ -41,12 +41,8 @@ static TBiLED m_Led = {{LED_GREEN_PORT, LED_GREEN_PIN}, {LED_RED_PORT, LED_RED_P
 
 //Prototypes------------------------------------------------------------------------//
 int8_t Get_Module_Address( void );
-void Task_Control_LEDs( void );
-void InitBiLED( const TBiLED *pBiLed );
 void SetBiLED( const TBiLED *pBiLed, TBiLEDColor Color ); 
-void GPS_nRST_Init(void);
 void GPS_Reset (FunctionalState NewState);
-void PPS_Pin_Init(void);
 void Func_GPIO_Init(void);
 
 //Macro---------------------------------------------------------------------------//
