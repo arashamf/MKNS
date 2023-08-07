@@ -25,7 +25,6 @@
 #include "MDR32F9Qx_config.h"
 #include "MDR32F9Qx_bkp.h"
 
-#include "MNP_msg.h"
 /* Exported types ------------------------------------------------------------*/
 
 /* Exported constants --------------------------------------------------------*/
@@ -33,10 +32,6 @@
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions prototypes ---------------------------------------------*/
-static void CPUClk80MHz_Init(void);
-bool ClockConfigure (void);
-void InitWatchDog(void);
-void Task_Control_LEDs( void );
 
 /* Private defines -----------------------------------------------------------*/
 #define HSE_ON_ATTEMPTS				10

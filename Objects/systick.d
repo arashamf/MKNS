@@ -24,6 +24,4 @@
 .\objects\systick.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\systick.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\systick.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\systick.o: .\core\inc\MNP_msg.h
-.\objects\systick.o: .\core\inc\typedef.h
 .\objects\systick.o: .\core\inc\HW_Profile.h

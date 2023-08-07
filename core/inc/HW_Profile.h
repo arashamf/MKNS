@@ -11,11 +11,11 @@
 //#define TICKS_PER_SECOND  (TICKS_PER_MILLISECOND*1000)	
 
 //-----------------------------------------------------
-#define LED_GREEN_PIN						PORT_Pin_2
-#define LED_GREEN_PORT					MDR_PORTF
+#define LED_GREEN_PIN						PORT_Pin_6
+#define LED_GREEN_PORT					MDR_PORTE
 
-#define LED_RED_PIN							PORT_Pin_3
-#define LED_RED_PORT						MDR_PORTF
+#define LED_RED_PIN							PORT_Pin_7
+#define LED_RED_PORT						MDR_PORTE
 
 //CAN--------------------------------------------------
 #define MY_MDR_CAN							MDR_CAN1
@@ -90,9 +90,15 @@
 #define GPS_PIN_nRST 						PORT_Pin_1
 
 // Пин выдачи PPS сигнала---------------------------
-#define CLOCK_PPS_PULSE_PIN 		RST_CLK_PCLK_PORTA
-#define PPS_PULSE_PIN 					PORT_Pin_5
-#define PPS_PULSE_PORT					MDR_PORTA
+#define CLOCK_PPS_PULSE_PIN 		RST_CLK_PCLK_PORTB
+#define PPS_PULSE_PIN 					PORT_Pin_8
+#define PPS_PULSE_PORT					MDR_PORTB
+
+
+// Пин приёма PPS сигнала---------------------------
+#define CLOCK_PPS_IN_PIN 		RST_CLK_PCLK_PORTB
+#define PPS_IN_PIN 					PORT_Pin_7
+#define PPS_IN_PORT					MDR_PORTB
 
 // GPS Ant Power------------------------------------------
 #define GPS_CLOCK_ANT_PW				RST_CLK_PCLK_PORTD

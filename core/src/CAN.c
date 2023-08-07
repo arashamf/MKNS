@@ -6,6 +6,7 @@
 #include "protocol.h"
 #include "HW_Profile.h"
 #include "timers.h"
+#include "MNP_msg.h"
 
 //Macro -----------------------------------------------------------------------------
 #define CAN_BRP_VALUE ( (CPU_CLOCK_VALUE / 1000000UL / 2UL) - 1 ) // • Tq (µs) = ((BRP+1))/CLK (MHz) 
@@ -169,9 +170,10 @@ void CAN_RX_Process(void)
 			CAN_C2_Send(); //отправка сообщения С2
 			fContext->CAN = 0; //статус CAN - исправно
 			xTimer_Reload(xTimerSelfC2Rqst); //перезагрузка таймера 
-			/*#ifdef __USE_DBG
+			
+			#ifdef __USE_DBG
 				printf ("CAN-get_C1\r\n");
-			#endif*/
+			#endif
 		}		
 		CAN_ClearFlag(MY_MDR_CAN, 1, CAN_STATUS_RX_FULL); //очистка флага "буфер полон"
 	}
@@ -211,9 +213,11 @@ static void vTimerSelfC2RqstCallback(xTimerHandle xTimer)
 static void vTimerRCVSelfC2RqstTimeoutCallback(xTimerHandle xTimer)
 {
 	fContext->CAN = 1; //CAN неиспрваен
+	
 	#ifdef __USE_DBG
 		printf ("CAN_error\r\n");
 	#endif
+	
 	xTimer_Delete(xTimer);
 }
 
@@ -245,6 +249,7 @@ static void CAN_A1_Send(void)
 																			CAN_STATUS_FRAME_ERR | CAN_STATUS_ACK_ERR );
 	
 	CAN_Transmit(MY_MDR_CAN, 2, &TxMsg);
+	
 	#ifdef __USE_DBG
 		printf ("put_A1\r\n");
 	#endif
@@ -280,6 +285,10 @@ static void CAN_C2_Send(void)
 																		CAN_STATUS_FRAME_ERR | CAN_STATUS_ACK_ERR );
 	
 	CAN_Transmit(MY_MDR_CAN, 3, &TxMsg);
+		
+	#ifdef __USE_DBG
+		printf ("put_C2\r\n");
+	#endif
 }
 
 

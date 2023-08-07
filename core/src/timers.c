@@ -154,7 +154,7 @@ static void GPS_PPS_EXTI_Init(void)
 	TIMER_CntInitTypeDef 			TIMER_CntInitStructure;
 	TIMER_ChnInitTypeDef			TIMER_ChnInitStructure;
 	
-	RST_CLK_PCLKcmd(RST_CLK_PCLK_TIMER1 | RST_CLK_PCLK_TIMER3 | RST_CLK_PCLK_PORTB, ENABLE);
+	RST_CLK_PCLKcmd(RST_CLK_PCLK_TIMER1 | RST_CLK_PCLK_TIMER3 | CLOCK_PPS_IN_PIN, ENABLE);
 	
 	//инициализация канала 4 таймера 3 для захвата секундной метки приёмника
 	TIMER_DeInit(MDR_TIMER3);
@@ -184,12 +184,12 @@ static void GPS_PPS_EXTI_Init(void)
 
 	//CAPTURE TIMER3 CHANNEL4 - PB7 
 	PORT_StructInit(&PORT_InitStructure);
-	PORT_InitStructure.PORT_Pin 	= PORT_Pin_7;
+	PORT_InitStructure.PORT_Pin 	= PPS_IN_PIN;
   PORT_InitStructure.PORT_FUNC 	= PORT_FUNC_OVERRID;
 	PORT_InitStructure.PORT_OE 		= PORT_OE_IN;
 	PORT_InitStructure.PORT_MODE 	= PORT_MODE_DIGITAL;
 	PORT_InitStructure.PORT_SPEED = PORT_SPEED_MAXFAST;
-  PORT_Init(MDR_PORTB, &PORT_InitStructure);
+  PORT_Init(PPS_IN_PORT, &PORT_InitStructure);
 	
 	TIMER_BRGInit(MDR_TIMER3, TIMER_HCLKdiv1);
 	
@@ -226,6 +226,10 @@ void GPS_PPS_IRQ_Callback(void)
 	if (TIMER_GetITStatus(MDR_TIMER3, TIMER_STATUS_CCR_CAP_CH4) == SET) 
 	{
 		TIMER_ClearFlag(MDR_TIMER3, TIMER_STATUS_CCR_CAP_CH4); //сброс флага захвата канала4 таймера3
+		
+		#ifdef __USE_DBG
+			printf ("get_PPS\r\n");
+		#endif
 		
 		if (MKS2.tmContext.Valid == 1) // проверка достоверности данных времени
 		{

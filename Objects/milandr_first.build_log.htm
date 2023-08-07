@@ -22,15 +22,14 @@ Dialog DLL:      TCM.DLL V1.53.0.0
  
 <h2>Project:</h2>
 D:\DOCS\STM32_works\MKNS\milandr_first.uvprojx
-Project File Date:  07/14/2023
+Project File Date:  08/07/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'test'
-compiling CAN.c...
-compiling Main.c...
+compiling MNP_msg.c...
 linking...
-Program Size: Code=16460 RO-data=688 RW-data=200 ZI-data=3776  
+Program Size: Code=13156 RO-data=636 RW-data=188 ZI-data=3532  
 FromELF: creating hex file...
 After Build - User command #1: cmd /c copy Obj\*.hex .
 Системе не удается найти указанный путь.
@@ -42,11 +41,26 @@ Package Vendor: Milandr
                 https://ic.milandr.ru/soft/Milandr.MDR32FxQI.1.0.pack
                 Milandr.MDR32FxQI.1.0
                 Milandr MDR32FxQI Series Device Support, Drivers and Examples
+   * Component: Startup Version: 2.0.2i
 
 <h2>Collection of Component include folders:</h2>
+  .\RTE\Device\MDR32F9Q2I
+  .\RTE\_test
+  C:\Users\ASkupov\AppData\Local\Arm\Packs\Milandr\MDR32FxQI\1.0\Libraries\CMSIS\MDR32FxQI\CoreSupport\CM3
+  C:\Users\ASkupov\AppData\Local\Arm\Packs\Milandr\MDR32FxQI\1.0\Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\inc
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:05
+
+   * Component: Milandr::Device:Startup:2.0.2i
+      Source file:   Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\arm\startup_MDR32F9Q2I.S
+      Source file:   Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\system_MDR32F9Q2I.c
+      Include file:  Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\system_MDR32F9Q2I.h
+      Include file:  Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\inc\MDR32F9Q2I.h
+      Include file:  Libraries\CMSIS\MDR32FxQI\CoreSupport\CM3\core_cm3.h
+      Include file:  Libraries\SPL\MDR32FxQI\MDR32FxQI_config.h
+      Include file:  Libraries\SPL\MDR32FxQI\inc\IRQ_Handler_Template\MDR32F9Q2I_IT.h
+      Source file:   Libraries\SPL\MDR32FxQI\src\IRQ_Handler_Template\MDR32F9Q2I_IT.c
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

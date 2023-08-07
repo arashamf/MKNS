@@ -23,7 +23,6 @@
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\uart_func.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\uart_func.o: .\core\inc\MNP_msg.h
 .\objects\uart_func.o: .\core\inc\typedef.h
 .\objects\uart_func.o: .\core\inc\HW_Profile.h
 .\objects\uart_func.o: .\core\inc\ring_buffer.h

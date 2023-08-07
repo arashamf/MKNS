@@ -25,5 +25,4 @@
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\ring_buffer.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\ring_buffer.o: .\core\inc\MNP_msg.h
 .\objects\ring_buffer.o: .\core\inc\typedef.h

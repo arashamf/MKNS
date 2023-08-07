@@ -23,8 +23,6 @@
 .\objects\pins.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\pins.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\pins.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\pins.o: .\core\inc\MNP_msg.h
-.\objects\pins.o: .\core\inc\typedef.h
 .\objects\pins.o: .\core\inc\pins.h
 .\objects\pins.o: .\core\inc\HW_Profile.h
 .\objects\pins.o: .\core\inc\systick.h

@@ -23,10 +23,10 @@
 .\objects\can.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\can.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\can.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\can.o: .\core\inc\MNP_msg.h
-.\objects\can.o: .\core\inc\typedef.h
 .\objects\can.o: .\core\inc\can.h
 .\objects\can.o: .\core\inc\pins.h
 .\objects\can.o: .\core\inc\HW_Profile.h
+.\objects\can.o: .\core\inc\typedef.h
 .\objects\can.o: .\core\inc\protocol.h
 .\objects\can.o: .\core\inc\timers.h
+.\objects\can.o: .\core\inc\MNP_msg.h

@@ -20,13 +20,18 @@
 
 
 /* Private function prototypes -----------------------------------------------*/
+static void CPUClk80MHz_Init(void);
+bool ClockConfigure (void);
+void InitWatchDog(void);
+void Task_Control_LEDs( void );
+void StartUpDelay( void );
 
 /* Private functions ---------------------------------------------------------*/
 #ifdef __USE_DBG
- #define ITM_STIM_U32 (*(volatile unsigned int*)0xE0000000)    // Stimulus Port Register word acces
- #define ITM_STIM_U8  (*(volatile         char*)0xE0000000)    // Stimulus Port Register byte acces
- #define ITM_ENA      (*(volatile unsigned int*)0xE0000E00)    // Trace Enable Ports Register
- #define ITM_TCR      (*(volatile unsigned int*)0xE0000E80)    // Trace control register
+	#define ITM_STIM_U32 (*(volatile unsigned int*)0xE0000000)    // Stimulus Port Register word acces
+	#define ITM_STIM_U8  (*(volatile         char*)0xE0000000)    // Stimulus Port Register byte acces
+	#define ITM_ENA      (*(volatile unsigned int*)0xE0000E00)    // Trace Enable Ports Register
+	#define ITM_TCR      (*(volatile unsigned int*)0xE0000E80)    // Trace control register
 
 int fputc( int c, FILE *f ) 
 {
@@ -43,20 +48,21 @@ int fputc( int c, FILE *f )
 int main( void )
 //-----------------------------------------------------------------------------
 {
-	RST_CLK_PCLKcmd( RST_CLK_PCLK_BKP, ENABLE ); //включение тактирования регистра RTC
-
-	SystemInit();
+	//RST_CLK_PCLKcmd( RST_CLK_PCLK_BKP, ENABLE ); //включение тактирования регистра RTC
 	
-	CPUClk80MHz_Init();
-	
-	SysTick_Init(&xTimer_Task);	///инициализация SysTick с периодом 1 мс
-	xTimer_Init(&Get_SysTick); //возвращает значение SysTick
+	//SystemInit();	//This function should be used only after reset
 	
 	Func_GPIO_Init(); //инициализация GPIO
+	StartUpDelay();
+	
+	CPUClk80MHz_Init(); //инициализация PLL
+	
+	MKS_context_ini (); //инициализация структуры 
+	SysTick_Init(&xTimer_Task);	//инициализация SysTick с периодом 1 мс
+	xTimer_Init(&Get_SysTick); //инициализация xTimer значением таймера SysTick
 	
 	MNP_UART_Init (); //инициализация UART
-	MKS_context_ini (); //инициализация структуры 
-	Init_CAN((void*)&MKS2);
+	Init_CAN((void*)&MKS2); //инициализация CAN
 	timers_ini (); //инициализация таймеров
 	GPS_Init(); //отправка конфигурационного сообщения приёмнику
 	
@@ -66,12 +72,11 @@ int main( void )
 	
 while(1)
 	{
-		CAN_RX_Process();
-		Task_Control_LEDs();
-		if ((MKS2.tmContext.put_PPS == 1) && (MKS2.tmContext.time_data_ready == 1))// отправка сообщения A при достоверной информации от GPS приемника			
+		CAN_RX_Process(); //проверка получения сообщений CAN
+		Task_Control_LEDs(); //установка свечения светодиодов
+		if (MKS2.tmContext.time_data_ready == 1)// отправка сообщения типа A при достоверной информации от GPS приемника			
 		{
-			MKS2.canContext.MsgA1Send(); //отправка сообщения типа А1	
-			MKS2.tmContext.put_PPS = 0; //сброс флага отправки сигнала секундной метки
+			MKS2.canContext.MsgA1Send(); //отправка сообщения типа А1				
 			MKS2.tmContext.time_data_ready = 0; //сброс флага готовности данных времени
 		} 
 
@@ -88,18 +93,15 @@ static void CPUClk80MHz_Init(void)
 	uint8_t n = 0;
 	ErrorStatus ret;
 	
-	/* Enable HSE */
-  RST_CLK_HSEconfig(RST_CLK_HSE_ON);
-  while ( n < HSE_ON_ATTEMPTS )
+  RST_CLK_HSEconfig(RST_CLK_HSE_ON); // Enable HSE 
+  while ( n < HSE_ON_ATTEMPTS ) //ожидание готовности HSE
   {
-		ret = RST_CLK_HSEstatus();
-		
+		ret = RST_CLK_HSEstatus(); 		
 		if ( ret == SUCCESS ) 
 			{break;}	
 		else
 			{n++;}
   }
-	
 	if ( ret != SUCCESS ) 
 		{SET_RED_LED();}
 
@@ -188,29 +190,31 @@ void InitWatchDog( void )
 }
 #endif
 
-//---------------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------//
 void Task_Control_LEDs( void )
 {
 	if ( (MKS2.fContext.Fail & FAIL_MASK) != 0 ) //если есть аппаратные неисправности
 		{SET_RED_LED();} 
 	else 
 	{	
-		if ( MKS2.tmContext.Valid ) 
+		if ( MKS2.tmContext.Valid == 1)// && (MKS2.tmContext.put_PPS == 1))
 			{SET_GREEN_LED();} 
 		else
 			{SET_YELLOW_LED();}
 	}
 }
 
-/*void HardFault_Handler(void)
+//------------------------------------------------------------------------------------------------//
+void StartUpDelay( void )
 {
-	NVIC_SystemReset();
+	// Задержка ~1.5 секунды
+	//
+	SysTick->LOAD = HSI_Value * 1.5 ;
+	SysTick->CTRL = SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_CLKSOURCE_Msk;
+	while( !(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) );
+	SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
 }
 
-void MemManage_Handler(void)
-{
-	NVIC_SystemReset();	
-}*/
 
 #if (USE_ASSERT_INFO == 1)
 void assert_failed(uint32_t file_id, uint32_t line)

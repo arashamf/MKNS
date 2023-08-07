@@ -49,20 +49,20 @@ int8_t Get_Module_Address(void)
 		{ BACKPLANE_ADDR4_PORT, BACKPLANE_ADDR4_PIN }
 	};
 	
-	/*number_pins = sizeof(pins)/sizeof (pins[0]); //количество пинов получения адреса
+	number_pins = sizeof(pins)/sizeof (pins[0]); //количество пинов получения адреса
 	Pins_Address_Init(pins, number_pins);
 	
 	Delay_MS(500);
 
-	//for(count = 0 ; count < number_pins; count++ )
-	for( count = 0 ; count < 5; count++ )
+	for(count = 0 ; count < number_pins; count++ )
+	//for( count = 0 ; count < 5; count++ )
 	{
 		addr |= ( (!PORT_ReadInputDataBit( pins[count].PORTx, pins[count].PORT_Pin )) << count); 
-	}*/
-	addr = 0x6;
-/*	#ifdef __USE_DBG
+	}
+	//addr = 0x6;
+	#ifdef __USE_DBG
 		printf ("my_adress=%d\r\n", addr);
-	#endif	*/		 
+	#endif		 
 	if ( addr != 0x00 ) 
 		{return addr;} //если получен адрес
 	else 
@@ -125,6 +125,7 @@ static void GPS_nRST_Init(void)
 {
 	PORT_InitTypeDef PORT_InitStructure;
 	RST_CLK_PCLKcmd(GPS_CLOCK_nRST, ENABLE);
+	
 	PORT_StructInit(&PORT_InitStructure);
 
 	PORT_InitStructure.PORT_Pin		= GPS_PIN_nRST; 
@@ -166,7 +167,7 @@ static void PPS_Pin_Init(void)
 void Func_GPIO_Init(void)
 {
 	InitBiLED(&m_Led);
-	SetBiLED(&m_Led, LED_BLACK); //установка бесцветного режима светодиода
+	SetBiLED(&m_Led, LED_RED); //установка бесцветного режима светодиода
 	
 	PPS_Pin_Init (); //инициализация пина получения сигнала PPS
 	GPS_PPS_DISABLE(); //отключение выдачи секундной метки

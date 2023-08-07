@@ -182,6 +182,7 @@ typedef union
 #define BUFFER_SIZE 					512					//размер буффера обмена с GPS-приемником
 
 #define DEFAULT_MAX_gDOP		((float)4.0) 	//максимально допустимый gDOP по умолчанию
+#define DEFAULT_MIN_gDOP		((float)0.1)
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных подряд достоверных сообщений от приёмника, необходимых для отправки CAN-сообщения типа А1
 
 #define FAIL_MASK ((uint16_t)0xF0) //маска флага интегрального отказа

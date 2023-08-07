@@ -23,12 +23,12 @@
 .\objects\main.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_timer.h
 .\objects\main.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\main.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\main.o: .\core\inc\MNP_msg.h
-.\objects\main.o: .\core\inc\typedef.h
 .\objects\main.o: .\core\inc\can.h
 .\objects\main.o: .\core\inc\uart_func.h
+.\objects\main.o: .\core\inc\typedef.h
 .\objects\main.o: .\core\inc\ring_buffer.h
 .\objects\main.o: .\core\inc\HW_Profile.h
+.\objects\main.o: .\core\inc\MNP_msg.h
 .\objects\main.o: .\core\inc\systick.h
 .\objects\main.o: .\core\inc\timers.h
 .\objects\main.o: .\core\inc\pins.h

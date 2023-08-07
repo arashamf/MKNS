@@ -25,7 +25,6 @@
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_uart.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_iwdg.h
 .\objects\mdr32f9qx_it.o: .\libraries\MDR32F9Qx_StdPeriph_Driver\inc\MDR32F9Qx_bkp.h
-.\objects\mdr32f9qx_it.o: .\core\inc\MNP_msg.h
 .\objects\mdr32f9qx_it.o: .\core\inc\typedef.h
 .\objects\mdr32f9qx_it.o: .\core\inc\ring_buffer.h
 .\objects\mdr32f9qx_it.o: .\core\inc\timers.h

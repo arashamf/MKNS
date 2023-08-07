@@ -129,6 +129,7 @@ void SystemCoreClockUpdate (void)
   * @retval None
   */
 void SystemInit (void)
+
 {
 	/* Reset the RST clock configuration to the default reset state */
 
