@@ -34,7 +34,7 @@
 /* Exported functions prototypes ---------------------------------------------*/
 
 /* Private defines -----------------------------------------------------------*/
-#define HSE_ON_ATTEMPTS				10
+#define HSE_ON_ATTEMPTS				15
 //#define __USE_DBG
 #define __USE_IWDG
 

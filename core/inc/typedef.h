@@ -18,7 +18,9 @@ typedef struct
 //	uint16_t cfg_msg_delay; //задержка при отправке конф. сообщения приёмника 
 	enum 
 	{
-		__SYNC_RST = 1, //стадия перезагрузки модуля
+		__SYNC_EMPTY = 0,
+		__SYNC_SOFTRST,
+		__SYNC_HARDRST, //стадия перезагрузки модуля
 		__SYNC_LOAD_CFG //стадия отправки конфигурационных сообщений модуля
 	}	cfg_state;
 } MNP_M7_CFG_t;
@@ -30,6 +32,8 @@ typedef struct
 	float 		Max_gDOP; //максимально допустимый gDOP
 	int8_t		TAI_UTC_offset; //разница между атомным временем и временем UTC
 	uint8_t 	ValidTHRESHOLD; 	// "сдвиговый регистр" накапливающий достоверность
+	uint8_t 	sum_bad_msg; //количество подряд принятых "плохих" сообщений от приёмника (GDOP > 20)
+	
 	struct 
 	{
 		uint8_t 										: 3;
@@ -185,10 +189,10 @@ typedef union
 #define DEFAULT_MIN_gDOP		((float)0.1)
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных подряд достоверных сообщений от приёмника, необходимых для отправки CAN-сообщения типа А1
 
-#define FAIL_MASK ((uint16_t)0xF0) //маска флага интегрального отказа
+#define FAIL_MASK ((uint16_t)0x0F) //маска флага интегрального отказа
 
-#define GPS_RST_DELAY						250 	//задержка при перезагрузке приёмника
-#define GPS_CFG_MSG_DELAY				75  	//задержка при отправке конф. сообщения приёмника 
+#define GPS_RST_DELAY						5 	//задержка при аппаратной перезагрузке приёмника
+#define GPS_CFG_MSG_DELAY				100  	//задержка при отправке конф. сообщения приёмника 
 #define GPS_PARSE_DELAY					100	 //длительность интервала задержки парсинга сообщений от приёмника
 
 #define MNP_SYNC_CHAR						0x81FF //синхрослово mnp-сообщени¤

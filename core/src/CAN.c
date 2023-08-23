@@ -286,9 +286,6 @@ static void CAN_C2_Send(void)
 	
 	CAN_Transmit(MY_MDR_CAN, 3, &TxMsg);
 		
-	#ifdef __USE_DBG
-		printf ("put_C2\r\n");
-	#endif
 }
 
 

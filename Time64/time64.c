@@ -515,7 +515,8 @@ static Time64_T seconds_between_years(Year left_year, Year right_year) {
 }
 
 
-Time64_T mktime64(struct TM *input_date) {
+Time64_T mktime64(struct TM *input_date) 
+{
     struct tm safe_date;
     struct TM date;
     Time64_T  time;

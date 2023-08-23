@@ -48,10 +48,6 @@ int fputc( int c, FILE *f )
 int main( void )
 //-----------------------------------------------------------------------------
 {
-	//RST_CLK_PCLKcmd( RST_CLK_PCLK_BKP, ENABLE ); //включение тактирования регистра RTC
-	
-	//SystemInit();	//This function should be used only after reset
-	
 	Func_GPIO_Init(); //инициализация GPIO
 	StartUpDelay();
 	
@@ -72,6 +68,7 @@ int main( void )
 	
 while(1)
 	{
+		GPS_wait_data_Callback (); //проверка получения навигационного сообщения от приёмника
 		CAN_RX_Process(); //проверка получения сообщений CAN
 		Task_Control_LEDs(); //установка свечения светодиодов
 		if (MKS2.tmContext.time_data_ready == 1)// отправка сообщения типа A при достоверной информации от GPS приемника			

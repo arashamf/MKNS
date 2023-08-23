@@ -6,6 +6,10 @@
 static xTIMER xTimerList[MAX_xTIMERS];
 static portTickType xTimeNow;
 
+static void timer_capture_PPS_init(void);
+static void timer_duration_PPS_init(void);
+static void UART_TIMER_Init(void);
+
 //static void vTimerGPSAntADCCallback(xTimerHandle xTimer);				// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
 //static void vTimerGPSAntPowerCallback(xTimerHandle xTimer);			// таймер управления питанием антены GPS приемника
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer);			// таймер на разрешение выдачу сигнала PPS
@@ -109,7 +113,7 @@ void xTimer_Task(uint32_t portTick)
 	}	
 }
 
-//-------------------------------------------------------------------------------------------------------------//
+//--------------------инициализация таймера 2 для проверки получения сообщения от приёмника--------------------//
 static void UART_TIMER_Init(void)
 {
 	TIMER_CntInitTypeDef TIMER_CntInitStructure;
@@ -138,16 +142,46 @@ static void UART_TIMER_Init(void)
 	TIMER_Cmd(MDR_TIMER2, ENABLE);
 }
 
-//-----------------Прерывание таймера ожидания прихода новых данных от GPS приемника-----------------//
+//----------------------Прерывание таймера ожидания прихода новых данных от GPS приемника----------------------//
 void UART_TIMER_Callback(void)
 {
-	if(TIMER_GetITStatus(MDR_TIMER2, TIMER_STATUS_CNT_ARR) == SET)
+	if(TIMER_GetITStatus(MDR_TIMER2, TIMER_STATUS_CNT_ARR) == SET) //если установлен флаг совпадения CNT с ARR
 		{GPS_wait_data_Callback ();} //обрабока данных от приёмника	
 	TIMER_ClearFlag(MDR_TIMER2, TIMER_STATUS_CNT_ARR);
 }
 
-//----------------------------------инициализация таймера 3 и таймера 1----------------------------------//
-static void GPS_PPS_EXTI_Init(void)
+//-------------------------------------------------------------------------------------------------------------//
+void timer_delay (uint16_t delay)
+{
+	TIMER_CntInitTypeDef TIMER_CntInitStructure;
+
+	RST_CLK_PCLKcmd(RST_CLK_PCLK_TIMER2, ENABLE); //тактирование таймера
+
+	TIMER_DeInit(MDR_TIMER2); //сброс настроек таймера
+
+	TIMER_CntStructInit(&TIMER_CntInitStructure);
+
+	TIMER_BRGInit(MDR_TIMER2, TIMER_HCLKdiv1);	//инициализация тактовой шины тайиера с предделителем
+
+	TIMER_CntInitStructure.TIMER_Prescaler				= 40000 - 1; // 2kГц
+	TIMER_CntInitStructure.TIMER_Period						= 2*delay - 1;	// 100мС
+	TIMER_CntInitStructure.TIMER_CounterMode			= TIMER_CntMode_ClkFixedDir;
+	TIMER_CntInitStructure.TIMER_CounterDirection	= TIMER_CntDir_Up;	 
+	TIMER_CntInitStructure.TIMER_ARR_UpdateMode		= TIMER_ARR_Update_Immediately;   
+	TIMER_CntInitStructure.TIMER_IniCounter 			= 0;
+
+	TIMER_CntInit(MDR_TIMER2, &TIMER_CntInitStructure);
+
+	TIMER_ClearFlag(MDR_TIMER2, TIMER_STATUS_CNT_ARR); // сброс флага обновления	
+	TIMER_Cmd(MDR_TIMER2, ENABLE);
+	
+	while (!(TIMER_GetFlagStatus (MDR_TIMER2, TIMER_STATUS_CNT_ARR))) {}
+	TIMER_Cmd(MDR_TIMER2, DISABLE);
+	TIMER_ClearFlag(MDR_TIMER2, TIMER_STATUS_CNT_ARR); // сброс флага обновления	
+}
+
+//-----------------------------инициализация таймера 3 для захвата секундной метки-----------------------------//
+static void timer_capture_PPS_init(void)
 {
 	PORT_InitTypeDef 					PORT_InitStructure;
 	
@@ -198,8 +232,13 @@ static void GPS_PPS_EXTI_Init(void)
 	NVIC_EnableIRQ(Timer3_IRQn);
 	
 	TIMER_Cmd(MDR_TIMER3, ENABLE);
+}	
+
+//----------------инициализация таймера 1 для управления длительностью сигнала PPS от приемника----------------//
+static void timer_duration_PPS_init(void)
+{
+	TIMER_CntInitTypeDef 			TIMER_CntInitStructure;
 	
-	//инициализация таймера 1 для управления длительностью сигнала PPS от GPS приемника
 	TIMER_DeInit(MDR_TIMER1);
 	
 	TIMER_CntStructInit(&TIMER_CntInitStructure);	
@@ -301,7 +340,7 @@ static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer)
 		printf ("GPS_timeout\r\n");
 	#endif
 	
-	GPS_Config(); //перезагрузка и инициализация таймера 
+	GPS_Hard_Reset();
 }
 
 //------------Перезагрузка таймера таймаута при отсутствии обмена по UART с GPS-приемником------------//
@@ -313,7 +352,7 @@ void Reload_Timer_GPS_UART_Timeout(void)
 //-------------------------Создание таймера перезагрузки и настройки приёмника-------------------------//
 void Create_Timer_configure_GPS (void)
 {
-	xTimerGPSCfg = xTimer_Create(GPS_RST_DELAY, DISABLE, &vTimerGPSCfgCallback, ENABLE); 
+	xTimerGPSCfg = xTimer_Create(GPS_RST_DELAY, ENABLE, &vTimerGPSCfgCallback, ENABLE); 
 }
 
 //-------------------------коллбек таймера перезагрузки и настройки приёмника-------------------------//
@@ -321,19 +360,37 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 {
 	switch(MNP_M7_CFG.cfg_state) 
 	{
-		case __SYNC_RST: //если стадия аппартной перезагрузки модуля
+		case __SYNC_EMPTY:
+			xTimer_Delete(xTimerGPSCfg); //удаление таймера	
+			break;
+			
+		case __SYNC_SOFTRST:
+			xTimer_Reload(xTimerGPSUARTTimeout);
+			GPS_Init();
+			#ifdef __USE_DBG
+				printf ("GPS_Init\r\n");
+			#endif
+			MNP_M7_CFG.cfg_state =__SYNC_EMPTY;
+			xTimer_Delete(xTimerGPSCfg); //удаление таймера	
+			break;
+		
+		case __SYNC_HARDRST: //если стадия аппартной перезагрузки модуля
+			xTimer_Reload(xTimerGPSUARTTimeout);
 			MNP_M7_CFG.cfg_state = __SYNC_LOAD_CFG; //установка стадии отправки конфигурационных сообщений
 			GPS_Reset (DISABLE); //отключение пина аппаратной перезагрузки модуля			
-			xTimer_SetPeriod(xTimerGPSCfg, GPS_CFG_MSG_DELAY); //установка периода таймера настройки приёмника 75 мс
+			xTimer_SetPeriod(xTimerGPSCfg, GPS_CFG_MSG_DELAY); //установка таймера отправки конф. сообщения приёмнику 
 			xTimer_Reload(xTimerGPSCfg); //перезагрузка таймера настройки приемника
 			break;
 		
 		case __SYNC_LOAD_CFG: //стадия отправки конф. сообщений приёмнику
+			xTimer_Reload(xTimerGPSUARTTimeout);
 			GPS_Init();
+			MNP_M7_CFG.cfg_state =__SYNC_EMPTY;
 			xTimer_Delete(xTimerGPSCfg); //удаление таймера	
 			break;
 
 		default:
+			xTimer_Delete(xTimerGPSCfg); //удаление таймера	
 			break;
 	}
 }
@@ -341,8 +398,9 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 //--------------------------------инициализация аппаратных и программных таймеров--------------------------------//
 void timers_ini (void)
 {
-	UART_TIMER_Init(); //инициализация таймера таймаута при отсутствии обмена по UART с GPS-приемником
-	GPS_PPS_EXTI_Init (); //инициализация таймера 3 и таймера 1
+//	UART_TIMER_Init(); //инициализация таймера проверка  получения сообщения от приемника
+	timer_capture_PPS_init();
+	timer_duration_PPS_init();
 	
 	//таймер таймаута при отсутствии сигнала PPS от GPS приемника
 	//xTimerGPSPPSTimeout = xTimer_Create(1100, ENABLE, &vTimerGPSPPSTimeoutCallback, ENABLE);

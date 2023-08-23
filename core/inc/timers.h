@@ -52,6 +52,7 @@ void GPS_PPS_DISABLE_IRQ_Callback(void);
 void Reload_Timer_GPS_UART_Timeout(void);	
 void Create_Timer_configure_GPS (void);
 void timers_ini (void);
+void timer_delay (uint16_t );
 
 #ifdef __cplusplus
 }

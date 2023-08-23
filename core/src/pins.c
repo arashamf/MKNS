@@ -167,7 +167,7 @@ static void PPS_Pin_Init(void)
 void Func_GPIO_Init(void)
 {
 	InitBiLED(&m_Led);
-	SetBiLED(&m_Led, LED_RED); //установка бесцветного режима светодиода
+	SetBiLED(&m_Led, LED_YELLOW); //установка бесцветного режима светодиода
 	
 	PPS_Pin_Init (); //инициализация пина получения сигнала PPS
 	GPS_PPS_DISABLE(); //отключение выдачи секундной метки

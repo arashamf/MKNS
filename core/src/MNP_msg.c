@@ -17,6 +17,7 @@ static void GPS_Read_Data(MNP_MSG_t *);
 static uint16_t MNP_CalcChkSum( uint16_t *Array, int WordsCount );
 static void MNP_PutMessage (MNP_MSG_t *Msg, uint16_t MsgId, uint16_t WordsCount);
 static void MNP_M7_init ( MNP_MSG_t *Msg);
+static void MNP_Reset(MNP_MSG_t *Msg);
 //Private defines -------------------------------------------------------------------------------//
 
 //Constants -------------------------------------------------------------------------------------//
@@ -84,12 +85,16 @@ static void MNP_M7_init ( MNP_MSG_t *Msg)
 	Msg->payload.msg3006.config.disable_2D = 0x0; //отключение запрета двумерной навигации
 	Msg->payload.msg3006.config.use_RAIM = 0x1; //включение алгоритма RAIM
 	Msg->payload.msg3006.config.enable_warm_startup = 0x1; //включение быстрого «горячего» старта
+	Msg->payload.msg3006.config.true_PPS = 0x1;
+	Msg->payload.msg3006.config.inst_velocity = 0x0;
 	Msg->payload.msg3006.config.sys_time = 0x0; // Привязка секундной метки к времени навигационной системы 
 	Msg->payload.msg3006.config.glo_time = 0x1; // Секундная метка ГЛОНАСС / UTC(SU)
 	Msg->payload.msg3006.config.shift_meas = 0x1; // Привязка измерений к секундной метке
 	Msg->payload.msg3006.config.enable_SBAS = 0x0; //Разрешение SBAS
 	Msg->payload.msg3006.config.enable_iono_SBAS = 0x0; //Разрешение модели ионосферы SBAS
 	Msg->payload.msg3006.config.GPS_compatibility = 0x0; //Режим совместимости с приемниками GPS
+	Msg->payload.msg3006.config.fake_PPS = 0x0;
+	Msg->payload.msg3006.config.fake_M3 = 0x0;
 	Msg->payload.msg3006.config.wr_alms = 0x1; //включение сохранения в flash альманахов 
 	Msg->payload.msg3006.config.wr_ephs = 0x1; //включение сохранения в flash эфемерид 
 	Msg->payload.msg3006.config.wr_ionoutc = 0x1; //включение сохранения в flash модели UTC GPS
@@ -151,9 +156,9 @@ void Set_GNSS_interval (MNP_MSG_t *Msg, uint32_t inerval)
 	Msg->payload.msg3006.command_code.cmd_3006.code = 0x07; //настройка длины интервала измерения
 	Msg->payload.msg3006.command_code.dummy = 0x00; //резерв
 	
-	Msg->payload.msg3006.interval = inerval; //Длина интервала измерения, 2000 соответствует 1с
+	Msg->payload.msg3006.int_mask.interval = inerval; //Длина интервала измерения, 2000 соответствует 1с
 	
-	MNP_PutMessage (Msg, MSG_3006, (sizeof(Msg->payload.msg3006.interval) + sizeof(Msg->payload.msg3006.command_code))/2);
+	MNP_PutMessage (Msg, MSG_3006, (sizeof(Msg->payload.msg3006.int_mask) + sizeof(Msg->payload.msg3006.command_code))/2);
 }
 
 //-----------------------------------------------------------------------------------------------------//
@@ -167,9 +172,9 @@ void Get_GNSS_interval (MNP_MSG_t *Msg, uint32_t inerval)
 	Msg->payload.msg3006.command_code.cmd_3006.code = 0x07; //настройка длины интервала измерения
 	Msg->payload.msg3006.command_code.dummy = 0x00; //резерв
 	
-	Msg->payload.msg3006.interval = inerval; //Длина интервала измерения, 2000 соответствует 1с
+	Msg->payload.msg3006.int_mask.interval = inerval; //Длина интервала измерения, 2000 соответствует 1с
 	
-	MNP_PutMessage (Msg, MSG_3006, (sizeof(Msg->payload.msg3006.interval) + sizeof(Msg->payload.msg3006.command_code))/2);
+	MNP_PutMessage (Msg, MSG_3006, (sizeof(Msg->payload.msg3006.int_mask) + sizeof(Msg->payload.msg3006.command_code))/2);
 }
 
 //-----------------------------------------------------------------------------------------------------//
@@ -182,7 +187,6 @@ void Read_SN (MNP_MSG_t *Msg)
 	Msg->payload.msg3006.command_code.cmd_3006.dummy2 = 0x00;	
 	Msg->payload.msg3006.command_code.cmd_3006.code = 0x16; //чтение серийного номера приёмника
 	Msg->payload.msg3006.command_code.dummy = 0x00; //резерв
-	
 	
 	MNP_PutMessage (Msg, MSG_3006, ((sizeof(Msg->payload.msg3006.command_code))/2));
 }
@@ -201,6 +205,7 @@ void MKS_context_ini (void)
 	MKS2.tmContext.ValidTHRESHOLD = 0,						//накопленная достоверность данных		
 	MKS2.tmContext.Valid = 0,                  		//сброс флага достоверности данных		
 	MKS2.tmContext.Max_gDOP = DEFAULT_MAX_gDOP, 	//установка максимально допустимого значения gDOP
+	MKS2.tmContext.sum_bad_msg = 0,  ////количество подряд принятых "плохих" сообщений от приёмника (GDOP > 20)
 		
 	MKS2.fContext.Fail = 0; //все флаги аппаратных неисправностей сброшены
 }
@@ -209,17 +214,24 @@ void MKS_context_ini (void)
 void GPS_Init(void)
 {
 	MNP_M7_init (&MNP_PUT_MSG);	
-	Delay_MS(50);
+//	Delay_MS(50);
+	timer_delay (50);
 	Set_GNSS_interval (&MNP_PUT_MSG, 2000); //установка интервала сообщений 2000 (2000=1c)
 }
 
 //---------------------------------сообщение перезагрузки GPS приемника---------------------------------//
-void MNP_Reset(MNP_MSG_t *Msg)
+static void MNP_Reset(MNP_MSG_t *Msg)
 {
 	memset ((void *)&Msg->payload.msg3006, 0, (sizeof(Msg->payload.msg3006.command_code)+sizeof(Msg->payload.msg3006.reset_mask)));
 
 	Msg->payload.msg3006.command_code.specialcmd_3006.special_code = SPECIAL_CMD_CODE_RESET;
 	Msg->payload.msg3006.command_code.specialcmd_3006.id = SPECIAL_CMD_ID; 
+	Msg->payload.msg3006.reset_mask.rtc  = 0x01; //сброс RTC
+	Msg->payload.msg3006.reset_mask.coord = 0x0; // стирание запомненных координат
+	Msg->payload.msg3006.reset_mask.ephs = 0x0;  //стирание эфемерид
+	Msg->payload.msg3006.reset_mask.alm  = 0x0; // стирание альманаха
+	Msg->payload.msg3006.reset_mask.iono_model= 0x0; //обнуление модели ионосферы/UTC GPS
+	Msg->payload.msg3006.reset_mask.dummy = 0x0;
 	MNP_PutMessage (Msg, MSG_3006, (sizeof(Msg->payload.msg3006.command_code)+sizeof(Msg->payload.msg3006.reset_mask))/ 2);
 }
 
@@ -415,16 +427,19 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 	
 	gDOP = Msg->payload.msg3000.gDOP;
 	
-	// проверка параметра gDOP на допустимое значения
-	if ((DEFAULT_MIN_gDOP < gDOP) && (gDOP < MKS2.tmContext.Max_gDOP)) //если gDOP находится в диапазоне от 0.1 до 4
-	//if ((gDOP < MKS2.tmContext.Max_gDOP))
+	// проверка флагов достоверности и параметра gDOP на допустимое значения
+	if ((gDOP > 0) && (gDOP < MKS2.tmContext.Max_gDOP) && (Msg->payload.msg3000.flags.solution_OK == 1) 
+	&& (Msg->payload.msg3000.flags.time_OK == 1)) //если gDOP находится в диапазоне от 0.1 до 4
 	{				
 		TimeStamp.tm_mday = Msg->payload.msg3000.day;
-		TimeStamp.tm_mon = Msg->payload.msg3000.month;			
+		TimeStamp.tm_mon = Msg->payload.msg3000.month - 1;			
 		TimeStamp.tm_year = Msg->payload.msg3000.year - 1900;
 		TimeStamp.tm_hour = Msg->payload.msg3000.hour;
 		TimeStamp.tm_min = Msg->payload.msg3000.minute;
 			
+		if (MKS2.tmContext.sum_bad_msg > 0)
+			{MKS2.tmContext.sum_bad_msg--;} //уменьшение накопленной ошибки принятия "плохих" пакетов
+		
 		if ( Msg->payload.msg3000.second == 60 ) //обработка события високосной секунды
 			{TimeStamp.tm_sec = 59;} 
 		else 
@@ -433,7 +448,6 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		UNIX_Time64 = mktime64(&TimeStamp); //перевод полученной даты в формат UNIX (01.01.1970)
 			
 		MKS2.tmContext.Time2k = (uint32_t)(UNIX_Time64 - 946684800); //Time2k - время прошедшее с 01.01.2000
-	//	if (!(Msg->payload.msg3000.flags.GPS) || !(Msg->payload.msg3000.flags.UTC)) // достоверность информации от GPS приемника (если установлена 1 то данные недостоверны)
 		{
 			if (!(MKS2.tmContext.ValidTHRESHOLD & DEFAULT_MASK_ValidTHRESHOLD )) //DEFAULT_MASK_ValidTHRESHOLD == 0b100
 				{MKS2.tmContext.ValidTHRESHOLD++;} //четыре принятые посылки должны быть достоверны
@@ -446,10 +460,18 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		if (MKS2.tmContext.ValidTHRESHOLD > 0)
 			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности		
 		MKS2.tmContext.Valid = 0; //сброс флага достоверности времени 
-			
+		if (gDOP > 20)	
+		{
+			MKS2.tmContext.sum_bad_msg++; //увеличение накопленной ошибки принятия "плохих" пакетов
+			if (MKS2.tmContext.sum_bad_msg >= 120)
+			{
+				MKS2.tmContext.sum_bad_msg = 0;
+				GPS_Hard_Reset();
+			}
+		}
 		#ifdef __USE_DBG
 		sprintf (DBG_buffer, (char *)"pDOP=%0.2f, gDOP=%0.2f, %u %u\r\n", Msg->payload.msg3000.pDOP, 
-		Msg->payload.msg3000.gDOP, Msg->payload.msg3000.flags.GPS, Msg->payload.msg3000.flags.UTC);
+		Msg->payload.msg3000.gDOP, Msg->payload.msg3000.flags.solution_OK, Msg->payload.msg3000.flags.time_OK);
 		printf ("%s", DBG_buffer);
 		#endif
 	}
@@ -482,17 +504,38 @@ int8_t GPS_wait_data_Callback (void)
 }
 
 //-----------------------------------------------------------------------------------------------------//
-void GPS_Config(void)
+void GPS_Hard_Reset(void)
 {
-	#ifdef __USE_DBG
-	printf ("MNP_reset\r\n");
-	#endif
+	GPS_Reset(ENABLE);
+	timer_delay (GPS_RST_DELAY);
+	GPS_Reset(DISABLE);
 	
-	GPS_Reset(ENABLE); //активировать пин аппаратной перезагрузки приёмника
-	MNP_M7_CFG.cfg_state = __SYNC_RST; //статус - перезагрузка модуля
-	Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника
+	timer_delay (GPS_CFG_MSG_DELAY);
+
+	MNP_M7_init (&MNP_PUT_MSG);	
+	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута	
+//	MNP_M7_CFG.cfg_state = __SYNC_HARDRST; //статус - перезагрузка модуля
+//	Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника
 }
 
 //-----------------------------------------------------------------------------------------------------//
+void GPS_Soft_Reset(void)
+{
+	#ifdef __USE_DBG
+	printf ("MNP_softreset\r\n");
+	#endif
+	
+	//MNP_Reset(&MNP_PUT_MSG); 
+	//NVIC_SystemReset();
+	
+	timer_delay (GPS_CFG_MSG_DELAY);
+	//Delay_MS(GPS_CFG_MSG_DELAY);
+	MNP_M7_init (&MNP_PUT_MSG);	
+	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута
+	//MNP_M7_CFG.cfg_state = __SYNC_SOFTRST; //статус - перезагрузка модуля
+	//Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника
+}
+
+
 
 
