@@ -76,7 +76,7 @@ static void UART_LoLevel_Init(MDR_UART_TypeDef* UARTx, uint32_t UARTx_CLOCK, uin
 	if ( mode == UART_RX_MODE) 
 	{
 		UART_ITConfig(UARTx, UART_IT_RX, ENABLE); // Выбор источников прерываний (прием данных)
-		UART_InitIRQ(UART_RX_IRQ, 1);
+		UART_InitIRQ(UART_RX_IRQ, 3);
 	}
 	
   UART_Cmd(UARTx, ENABLE); // Разрешение работы модуля UART

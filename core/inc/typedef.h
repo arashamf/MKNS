@@ -189,7 +189,7 @@ typedef union
 #define DEFAULT_MIN_gDOP		((float)0.1)
 #define DEFAULT_MASK_ValidTHRESHOLD		((uint16_t)0x0004) //количество полученных подряд достоверных сообщений от приёмника, необходимых для отправки CAN-сообщения типа А1
 
-#define FAIL_MASK ((uint16_t)0x0F) //маска флага интегрального отказа
+#define FAIL_MASK ((uint16_t)0xF0) //маска флага интегрального отказа
 
 #define GPS_RST_DELAY						5 	//задержка при аппаратной перезагрузке приёмника
 #define GPS_CFG_MSG_DELAY				100  	//задержка при отправке конф. сообщения приёмника 

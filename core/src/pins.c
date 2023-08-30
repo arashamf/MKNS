@@ -55,11 +55,9 @@ int8_t Get_Module_Address(void)
 	Delay_MS(500);
 
 	for(count = 0 ; count < number_pins; count++ )
-	//for( count = 0 ; count < 5; count++ )
 	{
 		addr |= ( (!PORT_ReadInputDataBit( pins[count].PORTx, pins[count].PORT_Pin )) << count); 
 	}
-	//addr = 0x6;
 	#ifdef __USE_DBG
 		printf ("my_adress=%d\r\n", addr);
 	#endif		 

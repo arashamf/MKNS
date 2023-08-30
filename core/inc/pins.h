@@ -13,7 +13,8 @@ extern "C" {
 // Private defines------------------------------------------------------------------//
 
 #define GPS_PPS_ENABLE() 	PORT_SetBits(PPS_PULSE_PORT, PPS_PULSE_PIN) 	//включение сигнала секундной метки
-#define GPS_PPS_DISABLE() 	PORT_ResetBits(PPS_PULSE_PORT, PPS_PULSE_PIN) //выключение сигнала секундной метки
+#define GPS_PPS_DISABLE() 	PPS_PULSE_PORT->RXTX &= ~PPS_PULSE_PIN 			//выключение сигнала секундной метки
+//#define GPS_PPS_DISABLE() 	PORT_ResetBits(PPS_PULSE_PORT, PPS_PULSE_PIN)
 
 #define ON 1
 #define OFF 0

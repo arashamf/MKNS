@@ -70,7 +70,7 @@ while(1)
 	{
 		GPS_wait_data_Callback (); //проверка получения навигационного сообщения от приёмника
 		CAN_RX_Process(); //проверка получения сообщений CAN
-		Task_Control_LEDs(); //установка свечения светодиодов
+		Task_Control_LEDs(); //установка цвета свечения светодиода
 		if (MKS2.tmContext.time_data_ready == 1)// отправка сообщения типа A при достоверной информации от GPS приемника			
 		{
 			MKS2.canContext.MsgA1Send(); //отправка сообщения типа А1				
@@ -78,7 +78,7 @@ while(1)
 		} 
 
 		#ifdef __USE_IWDG	
-			IWDG_ReloadCounter();
+			IWDG_ReloadCounter(); //перезагрузка сторожевого таймера
 		#endif
 
 	}

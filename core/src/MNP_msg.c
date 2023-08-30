@@ -103,7 +103,7 @@ static void MNP_M7_init ( MNP_MSG_t *Msg)
 	Msg->payload.msg3006.config.enable_3011_1002_GSA_0 = 0x0; //отключение кадра 3011/1002/«GSA» по каналу 0
 	Msg->payload.msg3006.config.enable_3002_1003_GSV_0 = 0x0; //отключение кадра 3002/1003/«GSV» по каналу 0
 	Msg->payload.msg3006.config.enable_3003_1012_RMC_0 = 0x0; //отключение кадра 3003/1012/«RMC» по каналу 0
-	Msg->payload.msg3006.config.enable_3000_1000_GGA_1 = 0x1; //отключение кадра 3000/1000/«GGA» по каналу 1
+	Msg->payload.msg3006.config.enable_3000_1000_GGA_1 = 0x1; //отключение кадра 3000/1000/«GGA» по каналу 1 (обмен с мк идёт по каналу 1)
 	Msg->payload.msg3006.config.enable_3011_1002_GSA_1 = 0x0; //отключение кадра 3011/1002/«GSA» по каналу 1
 	Msg->payload.msg3006.config.enable_3002_1003_GSV_1 = 0x0; //отключение кадра 3002/1003/«GSV» по каналу 1
 	Msg->payload.msg3006.config.enable_3003_1012_RMC_1 = 0x0; //отключение кадра 3003/1012/«RMC» по каналу 1
@@ -429,7 +429,7 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 	
 	// проверка флагов достоверности и параметра gDOP на допустимое значения
 	if ((gDOP > 0) && (gDOP < MKS2.tmContext.Max_gDOP) && (Msg->payload.msg3000.flags.solution_OK == 1) 
-	&& (Msg->payload.msg3000.flags.time_OK == 1)) //если gDOP находится в диапазоне от 0.1 до 4
+	&& (Msg->payload.msg3000.flags.time_OK == 1)) 
 	{				
 		TimeStamp.tm_mday = Msg->payload.msg3000.day;
 		TimeStamp.tm_mon = Msg->payload.msg3000.month - 1;			
@@ -460,13 +460,13 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		if (MKS2.tmContext.ValidTHRESHOLD > 0)
 			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности		
 		MKS2.tmContext.Valid = 0; //сброс флага достоверности времени 
-		if (gDOP > 20)	
+		if (gDOP > 20) 	
 		{
-			MKS2.tmContext.sum_bad_msg++; //увеличение накопленной ошибки принятия "плохих" пакетов
-			if (MKS2.tmContext.sum_bad_msg >= 120)
+			MKS2.tmContext.sum_bad_msg++; //увеличение накопленной ошибки принятия "плохих" (gDOP > 20) пакетов
+			if (MKS2.tmContext.sum_bad_msg >= 150) //если принято более 120 "плохих" пакетов
 			{
 				MKS2.tmContext.sum_bad_msg = 0;
-				GPS_Hard_Reset();
+				GPS_Hard_Reset(); //перезагрузка приёмника
 			}
 		}
 		#ifdef __USE_DBG
@@ -503,35 +503,26 @@ int8_t GPS_wait_data_Callback (void)
 	return result;
 }
 
-//-----------------------------------------------------------------------------------------------------//
+//--------------------------------------аппаратная перезагрузка приёмника--------------------------------------//
 void GPS_Hard_Reset(void)
 {
-	GPS_Reset(ENABLE);
-	timer_delay (GPS_RST_DELAY);
-	GPS_Reset(DISABLE);
-	
-	timer_delay (GPS_CFG_MSG_DELAY);
-
-	MNP_M7_init (&MNP_PUT_MSG);	
-	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута	
+	GPS_Reset(ENABLE); //активация пина перезагрузки приёмника
+	timer_delay (GPS_RST_DELAY); //задержка ~5 мс
+	GPS_Reset(DISABLE);	//сброс пина перезагрузки приёмника
+	timer_delay (GPS_CFG_MSG_DELAY); //задержка для перезагрузки приёмника
+	MNP_M7_init (&MNP_PUT_MSG);	//запись настроек в ОЗУ приёмника
+	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута принятия данных от приёмника
 //	MNP_M7_CFG.cfg_state = __SYNC_HARDRST; //статус - перезагрузка модуля
 //	Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника
 }
 
-//-----------------------------------------------------------------------------------------------------//
+//--------------------------------------программная перезагрузка приёмника--------------------------------------//
 void GPS_Soft_Reset(void)
-{
-	#ifdef __USE_DBG
-	printf ("MNP_softreset\r\n");
-	#endif
-	
-	//MNP_Reset(&MNP_PUT_MSG); 
-	//NVIC_SystemReset();
-	
-	timer_delay (GPS_CFG_MSG_DELAY);
-	//Delay_MS(GPS_CFG_MSG_DELAY);
-	MNP_M7_init (&MNP_PUT_MSG);	
-	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута
+{	
+	MNP_Reset(&MNP_PUT_MSG); //команда перезагрузки приёмника  	
+	timer_delay (GPS_CFG_MSG_DELAY); //задержка для перезагрузки приёмника
+	MNP_M7_init (&MNP_PUT_MSG);	//запись настроек в ОЗУ приёмника
+	Reload_Timer_GPS_UART_Timeout(); //перегрузка таймера обработки таймаута принятия данных от приёмника
 	//MNP_M7_CFG.cfg_state = __SYNC_SOFTRST; //статус - перезагрузка модуля
 	//Create_Timer_configure_GPS (); //создание таймера перезагрузки и настройки приёмника
 }
