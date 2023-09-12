@@ -2,6 +2,7 @@
 #include "MNP_msg.h"
 #include "pins.h"
 #include "main.h"
+#include "uart_func.h"
 
 static xTIMER xTimerList[MAX_xTIMERS];
 static portTickType xTimeNow;
@@ -10,14 +11,14 @@ static void timer_capture_PPS_init(void);
 static void timer_duration_PPS_init(void);
 static void UART_TIMER_Init(void);
 
-//static void vTimerGPSAntADCCallback(xTimerHandle xTimer);				// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+static void vTimerGPSAntADCCallback(xTimerHandle xTimer);				// детектирование антены GPS приемника (не подключена, подключена, КЗ)
 //static void vTimerGPSAntPowerCallback(xTimerHandle xTimer);			// таймер управления питанием антены GPS приемника
 static void vTimerGPSPPSCtrlCallback(xTimerHandle xTimer);			// таймер на разрешение выдачу сигнала PPS
 static void vTimerGPSPPSTimeoutCallback(xTimerHandle xTimer); 	// таймаут на отсутствие PPS от GPS приемника
 static void vTimerGPSUARTTimeoutCallback(xTimerHandle xTimer); 	// таймаут на отсутствие обмена по UART с GPS приемником
 static void vTimerGPSCfgCallback(xTimerHandle xTimer); 
 
-//static xTimerHandle xTimerGPSAntADC;			// детектирование антены GPS приемника (не поднлючена, подключена, КЗ)
+static xTimerHandle xTimerGPSAntADC;			// детектирование антены GPS приемника (не подключена, подключена, КЗ)
 //static xTimerHandle xTimerGPSAntPower;		// таймер управления питанием антены GPS приемника
 static xTimerHandle xTimerGPSPPSCtrl;			// таймер на разрешение выдачу сигнала PPS 
 static xTimerHandle xTimerGPSPPSTimeout; 	// таймаут на отсутствие PPS от GPS приемника
@@ -392,6 +393,57 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 	}
 }
 
+//------------------Детектирование антены (не подключена, подключена, КЗ)------------------//
+static void vTimerGPSAntADCCallback(xTimerHandle xTimer)
+{
+	const float v_per_bit = 0.000805;	// значение на 1 бит АЦП
+	__IO uint32_t ADCResult;
+	float GPSAntVoltage;
+	
+	if ( ADC1_GetFlagStatus(ADC1_FLAG_OVERWRITE) == SET ) 
+		{ADC1_ClearOverwriteFlag();}
+	
+	if ( ADC1_GetFlagStatus(ADC1_FLAG_OUT_OF_RANGE) == SET ) 
+		{ADC1_ClearOutOfRangeFlag();}
+
+	if ( ADC1_GetFlagStatus(ADC1_FLAG_END_OF_CONVERSION) == SET ) 
+	{		
+		ADCResult = ADC1_GetResult();
+		
+		switch( (ADCResult >> 16) & 0x1F ) 
+		{
+			case ADC_CH_ADC2:
+				GPSAntVoltage = (float)(ADCResult & ADC_RESULT_Msk) * v_per_bit;
+				
+				#ifdef __USE_DBG
+					sprintf (DBG_buffer, (char *)"volt_ant=%0.2F\r\n",GPSAntVoltage);
+					printf (DBG_buffer);
+				#endif
+			
+				if ( GPSAntVoltage >= GPS_ANT_DISCONNECT ) // антена не подключена
+				{
+				//	MKS2.fContext.GPSAntDisconnect = 1;
+					MKS2.fContext.GPSAntShortCircuit = 0;		
+				} 
+				else 
+					if ( GPSAntVoltage <= GPS_ANT_SHORT_CIRCUIT ) 	// КЗ антены
+					{
+						MKS2.fContext.GPSAntDisconnect = 1;
+						MKS2.fContext.GPSAntShortCircuit = 1;	
+					} 
+					else 				// антена подключена
+					{
+						MKS2.fContext.GPSAntDisconnect = 0;
+						MKS2.fContext.GPSAntShortCircuit = 0;
+					}	
+				break;
+					
+			default:
+				break;
+		}
+	}
+}
+
 //--------------------------------инициализация аппаратных и программных таймеров--------------------------------//
 void timers_ini (void)
 {
@@ -406,5 +458,5 @@ void timers_ini (void)
 	xTimerGPSUARTTimeout = xTimer_Create(5000, ENABLE, &vTimerGPSUARTTimeoutCallback, ENABLE); //перезагрузка и инициализация GPS-модуля через 5с 
 	
 	//таймер детектирования антены (не подключена, подключена, КЗ)
-	//xTimerGPSAntADC = xTimer_Create(250, ENABLE, &vTimerGPSAntADCCallback, ENABLE); 						
+	//xTimerGPSAntADC = xTimer_Create(500, ENABLE, &vTimerGPSAntADCCallback, ENABLE); 						
 }

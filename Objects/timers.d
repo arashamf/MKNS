@@ -28,3 +28,5 @@
 .\objects\timers.o: .\core\inc\typedef.h
 .\objects\timers.o: .\core\inc\pins.h
 .\objects\timers.o: .\core\inc\HW_Profile.h
+.\objects\timers.o: .\core\inc\uart_func.h
+.\objects\timers.o: .\core\inc\ring_buffer.h

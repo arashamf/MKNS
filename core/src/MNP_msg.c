@@ -375,7 +375,7 @@ static int8_t Parse_MNP_MSG (MNP_MSG_t * Msg)
 							printf ("%s", DBG_buffer);							
 							if (Msg->payload.msg3006.command_code.cmd_3006.code == 7)
 							{
-								sprintf (DBG_buffer, (char *)"interval=%u\r\n",Msg->payload.msg3006.interval);
+								sprintf (DBG_buffer, (char *)"interval=%u\r\n",Msg->payload.msg3006.int_mask.interval);
 								printf ("%s", DBG_buffer);
 							}
 							#endif

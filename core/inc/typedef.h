@@ -195,7 +195,10 @@ typedef union
 #define GPS_CFG_MSG_DELAY				100  	//задержка при отправке конф. сообщения приёмника 
 #define GPS_PARSE_DELAY					100	 //длительность интервала задержки парсинга сообщений от приёмника
 
-#define MNP_SYNC_CHAR						0x81FF //синхрослово mnp-сообщени¤
+#define MNP_SYNC_CHAR						0x81FF //синхрослово mnp-сообщения
+
+#define GPS_ANT_DISCONNECT				((float)3.03)
+#define GPS_ANT_SHORT_CIRCUIT			((float)1.0)
 //Constants ----------------------------------------------------------------------//
 
 #endif

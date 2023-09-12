@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "can.h"
+#include "adc.h"
 #include "uart_func.h"
 #include "HW_Profile.h"
 #include "MNP_msg.h"
@@ -61,6 +62,7 @@ int main( void )
 	Init_CAN((void*)&MKS2); //инициализация CAN
 	timers_ini (); //инициализация таймеров
 	GPS_Init(); //отправка конфигурационного сообщения приёмнику
+	init_ADC ();
 	
 	#ifdef __USE_IWDG
 		InitWatchDog(); //инициализация сторожевого таймера

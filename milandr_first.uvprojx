@@ -459,6 +459,11 @@
               <FileType>1</FileType>
               <FilePath>.\core\src\MDR32F9Qx_can_helper.c</FilePath>
             </File>
+            <File>
+              <FileName>adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\core\src\adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

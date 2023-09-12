@@ -10,6 +10,7 @@
 ".\objects\systick.o"
 ".\objects\timers.o"
 ".\objects\mdr32f9qx_can_helper.o"
+".\objects\adc.o"
 ".\objects\mdr32f9qx_adc.o"
 ".\objects\mdr32f9qx_arinc429r.o"
 ".\objects\mdr32f9qx_arinc429t.o"
