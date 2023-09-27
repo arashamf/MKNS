@@ -17,7 +17,7 @@
         <TargetCommonOption>
           <Device>MDR32F9Q2I</Device>
           <Vendor>Milandr</Vendor>
-          <PackID>Milandr.MDR32FxQI.1.0</PackID>
+          <PackID>Milandr.MDR32FxQI.1.1</PackID>
           <PackURL>https://ic.milandr.ru/soft/</PackURL>
           <Cpu>IRAM(0x20000000,0x8000) IROM(0x08000000,0x20000) CPUTYPE("Cortex-M3") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -637,40 +637,40 @@
       </file>
       <file attr="config" category="linkerScript" name="IDE\scatter\MDR32F9Q2I.sct" version="2.0.2i">
         <instance index="0">RTE\Device\MDR32F9Q2I\MDR32F9Q2I.sct</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.0.2i" condition="CON_MDR32F9Q2I"/>
-        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.1.0i" condition="CON_MDR32F9Q2I"/>
+        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.1"/>
         <targetInfos>
           <targetInfo name="test"/>
         </targetInfos>
       </file>
       <file attr="config" category="header" name="Libraries\SPL\MDR32FxQI\MDR32FxQI_config.h" version="2.0.2i">
         <instance index="0">RTE\Device\MDR32F9Q2I\MDR32FxQI_config.h</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.0.2i" condition="CON_MDR32F9Q2I"/>
-        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.1.0i" condition="CON_MDR32F9Q2I"/>
+        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.1"/>
         <targetInfos>
           <targetInfo name="test"/>
         </targetInfos>
       </file>
       <file attr="config" category="source" name="Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\arm\startup_MDR32F9Q2I.S" version="2.0.2i">
         <instance index="0">RTE\Device\MDR32F9Q2I\startup_MDR32F9Q2I.S</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.0.2i" condition="CON_MDR32F9Q2I"/>
-        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.1.0i" condition="CON_MDR32F9Q2I"/>
+        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.1"/>
         <targetInfos>
           <targetInfo name="test"/>
         </targetInfos>
       </file>
       <file attr="config" category="source" name="Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\system_MDR32F9Q2I.c" version="2.0.2i">
         <instance index="0">RTE\Device\MDR32F9Q2I\system_MDR32F9Q2I.c</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.0.2i" condition="CON_MDR32F9Q2I"/>
-        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.1.0i" condition="CON_MDR32F9Q2I"/>
+        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.1"/>
         <targetInfos>
           <targetInfo name="test"/>
         </targetInfos>
       </file>
       <file attr="config" category="header" name="Libraries\CMSIS\MDR32FxQI\DeviceSupport\MDR32F9Q2I\startup\system_MDR32F9Q2I.h" version="2.0.2i">
         <instance index="0">RTE\Device\MDR32F9Q2I\system_MDR32F9Q2I.h</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.0.2i" condition="CON_MDR32F9Q2I"/>
-        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="Milandr" Cversion="2.1.0i" condition="CON_MDR32F9Q2I"/>
+        <package name="MDR32FxQI" schemaVersion="1.2" url="https://ic.milandr.ru/soft/" vendor="Milandr" version="1.1"/>
         <targetInfos>
           <targetInfo name="test"/>
         </targetInfos>

@@ -8,6 +8,6 @@
 //- Macro ----------------------------------------
 
 //- Functions ------------------------------------
-void init_ADC (void );
+void init_ADC (void);
 
 #endif

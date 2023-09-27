@@ -460,7 +460,7 @@ static void GPS_Read_Data(MNP_MSG_t *Msg)
 		if (MKS2.tmContext.ValidTHRESHOLD > 0)
 			{MKS2.tmContext.ValidTHRESHOLD--;} //уменьшение счётчика достоверности		
 		MKS2.tmContext.Valid = 0; //сброс флага достоверности времени 
-		if (gDOP > 20) 	
+		if ((gDOP > 20) || (Msg->payload.msg3000.flags.solution_OK == 0)) 	
 		{
 			MKS2.tmContext.sum_bad_msg++; //увеличение накопленной ошибки принятия "плохих" (gDOP > 20) пакетов
 			if (MKS2.tmContext.sum_bad_msg >= 150) //если принято более 120 "плохих" пакетов

@@ -10,7 +10,13 @@
 #ifndef RTE_COMPONENTS_H
 #define RTE_COMPONENTS_H
 
-/* Milandr::Device:Startup:2.0.2i */
+
+/*
+ * Define the Device Header File: 
+ */
+#define CMSIS_device_header "MDR32F9Q2I.h"
+
+/* Milandr::Device:Startup:2.1.0i */
 /* Target microcontroller definition */
 #define USE_MDR32F9Q2I
 

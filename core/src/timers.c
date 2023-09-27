@@ -28,7 +28,7 @@ static xTimerHandle xTimerGPSCfg;					// таймер настройки GPS приемника
 //-------------------------------------------------------------------------------------------------------------//
 void xTimer_Init(uint32_t (*GetSysTick)(void))
 {
-	xTimeNow = GetSysTick;
+	xTimeNow = GetSysTick; //получение текущего системного времени
 }
 
 //-------------------------------------------------------------------------------------------------------------//
@@ -396,7 +396,7 @@ static void vTimerGPSCfgCallback(xTimerHandle xTimer)
 //------------------Детектирование антены (не подключена, подключена, КЗ)------------------//
 static void vTimerGPSAntADCCallback(xTimerHandle xTimer)
 {
-	const float v_per_bit = 0.000805;	// значение на 1 бит АЦП
+	const float v_per_bit = 0.000805;	// значение на 1 бит АЦП (3,3/4096)
 	__IO uint32_t ADCResult;
 	float GPSAntVoltage;
 	
@@ -408,16 +408,16 @@ static void vTimerGPSAntADCCallback(xTimerHandle xTimer)
 
 	if ( ADC1_GetFlagStatus(ADC1_FLAG_END_OF_CONVERSION) == SET ) 
 	{		
-		ADCResult = ADC1_GetResult();
+		ADCResult = ADC1_GetResult(); //Returns the ADC1 result
 		
-		switch( (ADCResult >> 16) & 0x1F ) 
+		switch( (ADCResult >> 16) & 0x1F )  //получение номера канала АЦП
 		{
 			case ADC_CH_ADC2:
-				GPSAntVoltage = (float)(ADCResult & ADC_RESULT_Msk) * v_per_bit;
+				GPSAntVoltage = (float)(ADCResult & 0xFFF) * v_per_bit; //
 				
 				#ifdef __USE_DBG
 					sprintf (DBG_buffer, (char *)"volt_ant=%0.2F\r\n",GPSAntVoltage);
-					printf (DBG_buffer);
+					printf ("%s", DBG_buffer);
 				#endif
 			
 				if ( GPSAntVoltage >= GPS_ANT_DISCONNECT ) // антена не подключена
@@ -426,6 +426,7 @@ static void vTimerGPSAntADCCallback(xTimerHandle xTimer)
 					MKS2.fContext.GPSAntShortCircuit = 0;		
 				} 
 				else 
+				{
 					if ( GPSAntVoltage <= GPS_ANT_SHORT_CIRCUIT ) 	// КЗ антены
 					{
 						MKS2.fContext.GPSAntDisconnect = 1;
@@ -436,6 +437,7 @@ static void vTimerGPSAntADCCallback(xTimerHandle xTimer)
 						MKS2.fContext.GPSAntDisconnect = 0;
 						MKS2.fContext.GPSAntShortCircuit = 0;
 					}	
+				}
 				break;
 					
 			default:
@@ -458,5 +460,5 @@ void timers_ini (void)
 	xTimerGPSUARTTimeout = xTimer_Create(5000, ENABLE, &vTimerGPSUARTTimeoutCallback, ENABLE); //перезагрузка и инициализация GPS-модуля через 5с 
 	
 	//таймер детектирования антены (не подключена, подключена, КЗ)
-	//xTimerGPSAntADC = xTimer_Create(500, ENABLE, &vTimerGPSAntADCCallback, ENABLE); 						
+	xTimerGPSAntADC = xTimer_Create(500, ENABLE, &vTimerGPSAntADCCallback, ENABLE); 						
 }
